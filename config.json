@@ -1,0 +1,55 @@
+{
+    "haraka": {
+        "agent_type": "Outbound",
+        "me": "frappemail.com",
+        "tls_key_path": null,
+        "tls_cert_path": null,
+        "received_header": "Frappe Mail Agent",
+        "retries": 3,
+        "frequency": 0,
+        "username": "frappe",
+        "password": "frappe",
+        "port": 25,
+        "plugins": {
+            "Inbound": [
+                "tls",
+                "headers",
+                "aliases",
+                "mailauth",
+                "inbound_hooks"
+            ],
+            "Outbound": [
+                "tls",
+                "headers",
+                "haraka-plugin-auth-enc-file",
+                "outbound_hooks"
+            ]
+        }
+    },
+    "rabbitmq": {
+        "host": "localhost",
+        "port": 5672,
+        "username": null,
+        "password": null
+    },
+    "queues": {
+        "mail::outgoing_mail": {
+            "durable": true
+        },
+        "mail::outgoing_mails": {
+            "durable": true
+        }
+    },
+    "consumers": {
+        "mail::outgoing_mail": {
+            "callback": "print_message",
+            "auto_ack": false,
+            "workers": 3
+        },
+        "mail::outgoing_mails": {
+            "callback": "print_message",
+            "auto_ack": false,
+            "workers": 5
+        }
+    }
+}

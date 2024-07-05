@@ -8,3 +8,19 @@ __pycache__
 .vscode
 env
 venv
+
+# Haraka
+queue
+config/me
+config/plugins
+config/tls.ini
+config/aliases
+config/host_list
+config/tls_key.pem
+config/tls_cert.pem
+config/outbound.ini
+config/dhparams.pem
+config/mailboxes.json
+config/mail_domains.json
+config/agent_config.json
+config/auth_enc_file.ini

@@ -1,14 +1,20 @@
 import sys
 from typing import Any
 from multiprocessing import Process
+from mail_agent.haraka import Haraka
+from mail_agent.utils import get_attr
 from mail_agent.rabbitmq import RabbitMQ
 
 
 def run(config: dict[str, Any]):
     start()
     queues_config: dict[str, dict] = config["queues"]
+    haraka_config: dict[str, Any] = config["haraka"]
     rabbitmq_config: dict[str, Any] = config["rabbitmq"]
     consumers_config: dict[str, dict] = config["consumers"]
+
+    haraka = Haraka()
+    haraka.setup(haraka_config)
 
     rabbitmq = get_rabbitmq_connection(rabbitmq_config)
     declare_queues(rabbitmq, queues_config)
@@ -16,7 +22,7 @@ def run(config: dict[str, Any]):
 
     processes = []
     for queue, consumer_config in consumers_config.items():
-        callback = consumer_config["callback"]
+        callback = get_attr("mail_agent.callback", consumer_config["callback"])
         auto_ack = consumer_config["auto_ack"]
         workers = consumer_config["workers"]
 
