@@ -1,15 +1,15 @@
 {
     "haraka": {
-        "agent_type": "Outbound",
+        "agent_type": "${HARAKA_AGENT_TYPE}",
         "me": "frappemail.com",
         "tls_key_path": null,
         "tls_cert_path": null,
         "received_header": "Frappe Mail Agent",
         "retries": 3,
         "frequency": 0,
-        "username": "frappe",
-        "password": "frappe",
-        "port": 25,
+        "username": "${HARAKA_USERNAME}",
+        "password": "${HARAKA_PASSWORD}",
+        "port": "${HARAKA_PORT}",
         "plugins": {
             "Inbound": [
                 "tls",
@@ -27,10 +27,10 @@
         }
     },
     "rabbitmq": {
-        "host": "localhost",
-        "port": 5672,
-        "username": null,
-        "password": null
+        "host": "${RABBITMQ_HOST}",
+        "port": "${RABBITMQ_PORT}",
+        "username": "${RABBITMQ_USERNAME}",
+        "password": "${RABBITMQ_PASSWORD}"
     },
     "queues": {
         "mail::outgoing_mail": {

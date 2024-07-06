@@ -11,6 +11,7 @@ venv
 
 # Haraka
 queue
+maildir
 config/me
 config/plugins
 config/tls.ini

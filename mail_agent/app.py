@@ -2,12 +2,13 @@ import sys
 from typing import Any
 from multiprocessing import Process
 from mail_agent.haraka import Haraka
-from mail_agent.utils import get_attr
 from mail_agent.rabbitmq import RabbitMQ
+from mail_agent.utils import get_attr, replace_env_vars
 
 
 def run(config: dict[str, Any]):
     start()
+    replace_env_vars(config)
     queues_config: dict[str, dict] = config["queues"]
     haraka_config: dict[str, Any] = config["haraka"]
     rabbitmq_config: dict[str, Any] = config["rabbitmq"]

@@ -1,10 +1,12 @@
+import os
+import sys
 import crypt
 import shutil
 import importlib
 import subprocess
 import configparser
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 
 def execute_command(command: str | list[str]) -> tuple[str, str]:
@@ -84,3 +86,20 @@ def get_attr(module_name: str, function_name: str) -> callable:
     function = getattr(module, function_name)
 
     return function
+
+
+def replace_env_vars(config: Any) -> Any:
+    if isinstance(config, dict):
+        for key, value in config.items():
+            config[key] = replace_env_vars(value)
+    elif isinstance(config, list):
+        config = [replace_env_vars(item) for item in config]
+    elif isinstance(config, str) and config.startswith("${") and config.endswith("}"):
+        env_var = config[2:-1]
+        config = os.getenv(env_var)
+
+        if not config:
+            print(f"Error: Environment variable {env_var} is not set")
+            sys.exit(1)
+
+    return config
