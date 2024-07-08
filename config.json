@@ -1,6 +1,6 @@
 {
     "haraka": {
-        "agent_type": "${HARAKA_AGENT_TYPE}",
+        "agent_type": "Outbound",
         "me": "frappemail.com",
         "tls_key_path": null,
         "tls_cert_path": null,
@@ -33,23 +33,16 @@
         "password": "${RABBITMQ_PASSWORD}"
     },
     "queues": {
-        "mail::outgoing_mail": {
-            "durable": true
-        },
         "mail::outgoing_mails": {
             "durable": true
         }
     },
     "consumers": {
-        "mail::outgoing_mail": {
-            "callback": "print_message",
-            "auto_ack": false,
-            "workers": 3
-        },
         "mail::outgoing_mails": {
-            "callback": "print_message",
+            "workers": 8,
             "auto_ack": false,
-            "workers": 5
+            "prefetch_count": 100,
+            "callback": "sendmail"
         }
     }
 }

@@ -24,7 +24,6 @@ class Haraka:
             "mailboxes.json": "config/mailboxes.json",
             "outbound.ini": "config/outbound.ini",
             "mail_domains.json": "config/mail_domains.json",
-            "agent_config.json": "config/agent_config.json",
             "auth_enc_file.ini": "config/auth_enc_file.ini",
         }
 
@@ -82,8 +81,6 @@ class Haraka:
             self.get_file_path("plugins"),
             "\n".join(config["plugins"][config["agent_type"]]),
         )
-        # TODO: Create agent_config.json
-        # write_file(self.get_file_path("agent_config.json"), config["agent_config"])
 
         if config["tls_key_path"] and config["tls_cert_path"]:
             update_ini_config(

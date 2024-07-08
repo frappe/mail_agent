@@ -1,0 +1,22 @@
+{
+  "name": "mail_agent",
+  "description": "Frappe Mail Agent",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frappe/mail_agent"
+  },
+  "author": "Frappe Technologies Pvt. Ltd.",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/frappe/mail_agent/issues"
+  },
+  "dependencies": {
+    "Haraka": "^3.0.3",
+    "amqplib": "^0.10.4",
+    "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
+    "haraka-plugin-auth-enc-file": "^1.0.3",
+    "haraka-plugin-mailauth": "^1.1.0",
+    "ioredis": "^5.4.1"
+  }
+}

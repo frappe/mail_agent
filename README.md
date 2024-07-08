@@ -10,6 +10,12 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
+## Setup
+
+```bash
+python setup.py
+```
+
 ## Running
 
 ```bash

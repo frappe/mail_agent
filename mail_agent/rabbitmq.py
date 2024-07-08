@@ -1,4 +1,5 @@
 import pika
+from typing import Any
 
 
 class RabbitMQ:
@@ -32,11 +33,49 @@ class RabbitMQ:
     def declare_queue(self, queue: str, durable: bool = True) -> None:
         self._channel.queue_declare(queue=queue, durable=durable)
 
-    def consume(self, queue: str, callback: callable, auto_ack: bool = False) -> None:
+    def publish(
+        self,
+        routing_key: str,
+        body: str,
+        exchange: str = "",
+        persistent: bool = True,
+    ) -> None:
+        if persistent:
+            self._channel.basic_publish(
+                exchange=exchange,
+                routing_key=routing_key,
+                body=body,
+                properties=pika.BasicProperties(
+                    delivery_mode=pika.DeliveryMode.Persistent
+                ),
+            )
+        else:
+            self._channel.basic_publish(
+                exchange=exchange, routing_key=routing_key, body=body
+            )
+
+    def consume(
+        self,
+        queue: str,
+        callback: callable,
+        auto_ack: bool = False,
+        prefetch_count: int = 1,
+    ) -> None:
+        self._channel.basic_qos(prefetch_count=prefetch_count)
         self._channel.basic_consume(
             queue=queue, on_message_callback=callback, auto_ack=auto_ack
         )
         self._channel.start_consuming()
+
+    def basic_get(
+        self, queue: str, callback: callable, auto_ack: bool = False
+    ) -> Any | None:
+        method, properties, body = self._channel.basic_get(
+            queue=queue, auto_ack=auto_ack
+        )
+
+        if method:
+            return callback(self._channel, method, properties, body)
 
     def _disconnect(self) -> None:
         if self._connection and self._connection.is_open:

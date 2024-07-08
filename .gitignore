@@ -23,5 +23,4 @@ config/outbound.ini
 config/dhparams.pem
 config/mailboxes.json
 config/mail_domains.json
-config/agent_config.json
 config/auth_enc_file.ini
