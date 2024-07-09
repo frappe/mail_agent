@@ -54,12 +54,16 @@ class Haraka:
 
         if config["agent_type"] == "Outbound":
             remove_directory(self.maildir_base)
-            update_ini_config(
-                self.get_file_path("smtp.ini"),
-                "main",
-                "listen",
-                f"[::0]:{config['port']}",
-            )
+
+            smtp_config = {
+                "listen": f"[::0]:{config['port']}",
+                "nodes": str(config["nodes"]),
+                "max_lines": "1000",
+                "max_received": "100",
+            }
+            for key, value in smtp_config.items():
+                update_ini_config(self.get_file_path("smtp.ini"), "main", key, value)
+
             update_ini_config(
                 self.get_file_path("outbound.ini"),
                 "main",

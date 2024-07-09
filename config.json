@@ -6,6 +6,7 @@
         "tls_cert_path": null,
         "received_header": "Frappe Mail Agent",
         "retries": 3,
+        "nodes": 4,
         "frequency": 0,
         "username": "${HARAKA_USERNAME}",
         "password": "${HARAKA_PASSWORD}",

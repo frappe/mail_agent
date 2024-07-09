@@ -17,6 +17,7 @@ config/me
 config/plugins
 config/tls.ini
 config/aliases
+config/smtp.ini
 config/host_list
 config/tls_key.pem
 config/tls_cert.pem
