@@ -1,0 +1,15 @@
+[Unit]
+Description=Frappe Mail Agent
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory={app_dir}
+ExecStart={app_bin}/mail-agent start
+Restart=always
+Environment=PATH={app_bin}:/usr/bin:/usr/local/bin
+StandardOutput=file:/var/log/mail-agent.log
+StandardError=file:/var/log/mail-agent.err.log
+
+[Install]
+WantedBy=multi-user.target

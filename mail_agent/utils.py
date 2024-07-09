@@ -103,3 +103,30 @@ def replace_env_vars(config: Any) -> Any:
             sys.exit(1)
 
     return config
+
+
+def generate_systemd_service(
+    template: str, enable: bool = True, restart: bool = True, **kwargs
+):
+    cwd = os.getcwd()
+    template_dir = os.path.join(cwd, "mail_agent/templates")
+    template_path = os.path.join(template_dir, template)
+    service_dir = os.path.join(cwd, "mail_agent/services")
+    service_path = os.path.join(service_dir, template)
+    systemd_path = f"/etc/systemd/system/{template}"
+
+    with open(template_path, "r") as template_file:
+        template_content = template_file.read()
+
+    service_content = template_content.format(**kwargs)
+    create_directory(service_dir)
+
+    with open(service_path, "w") as service_file:
+        service_file.write(service_content)
+
+    subprocess.run(["sudo", "cp", service_path, systemd_path], check=True)
+    subprocess.run(["sudo", "systemctl", "daemon-reload"], check=True)
+    if enable:
+        subprocess.run(["sudo", "systemctl", "enable", template], check=True)
+    if restart:
+        subprocess.run(["sudo", "systemctl", "restart", template], check=True)

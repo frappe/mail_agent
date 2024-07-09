@@ -9,6 +9,7 @@ __pycache__
 env
 venv
 Procfile
+mail_agent/services
 
 # Haraka
 queue

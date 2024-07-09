@@ -1,9 +1,10 @@
+import os
 import json
 import click
 import subprocess
 from dotenv import load_dotenv
 from mail_agent.haraka import Haraka
-from mail_agent.utils import replace_env_vars
+from mail_agent.utils import replace_env_vars, generate_systemd_service
 
 
 @click.group()
@@ -38,11 +39,19 @@ def setup(prod):
     click.echo("[X] Installing Node.js packages...")
     install_node_packages(prod)
 
+    if prod:
+        click.echo("[X] Installing Haraka globally...")
+        install_haraka_globally()
+
     click.echo("[X] Setting up Haraka MTA...")
     setup_haraka(config["haraka"])
 
     click.echo("[X] Generating Procfile...")
     generate_procfile(config["consumers"], prod)
+
+    if prod:
+        print("[X] Generating mail-agent.service [systemd]...")
+        generate_mail_agent_service()
 
 
 @cli.command()
@@ -60,6 +69,12 @@ def install_node_packages(for_production: bool = False):
         command.append("--prod")
 
     subprocess.run(command)
+
+
+def install_haraka_globally():
+    """Install Haraka globally using Yarn."""
+
+    subprocess.run(["yarn", "global", "add", "Haraka"])
 
 
 def setup_haraka(haraka_config: dict):
@@ -87,3 +102,9 @@ def generate_procfile(consumers_config: dict, for_production: bool = False):
 
     with open("Procfile", "w") as f:
         f.write("\n".join(lines))
+
+
+def generate_mail_agent_service():
+    app_dir = os.getcwd()
+    app_bin = os.path.join(app_dir, "env/bin")
+    generate_systemd_service("mail-agent.service", app_dir=app_dir, app_bin=app_bin)
