@@ -1,4 +1,5 @@
 cffi==1.16.0
+click==8.1.7
 cryptography==42.0.8
 honcho==1.1.0
 pika==1.3.2

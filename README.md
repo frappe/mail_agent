@@ -3,21 +3,19 @@
 ## Installation
 
 ```bash
-git clone https://github.com/frappe/mail_agent
-cd mail_agent
-virtualenv env
-source env/bin/activate
-pip install -r requirements.txt
+git clone https://github.com/frappe/mail_agent && cd mail_agent
+virtualenv env && source env/bin/activate
+pip install --editable .
 ```
 
 ## Setup
 
 ```bash
-python setup.py
+mail-agent setup # --prod for production
 ```
 
 ## Running
 
 ```bash
-honcho start
+mail-agent start
 ```

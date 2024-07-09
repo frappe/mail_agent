@@ -8,6 +8,7 @@ __pycache__
 .vscode
 env
 venv
+Procfile
 
 # Haraka
 queue
