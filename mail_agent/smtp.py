@@ -56,7 +56,7 @@ class SMTPConnectionPool:
             self.__current_pool_size -= 1
 
 
-async def send_mail(mail: dict):
+def send_mail(mail: dict):
     outgoing_mail = mail["outgoing_mail"]
     recipients = mail.get("recipients", [])
     parsed_message = Parser(policy=policy.default).parsestr(mail["message"])

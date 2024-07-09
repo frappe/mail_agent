@@ -50,6 +50,9 @@ def setup(prod):
     generate_procfile(config["consumers"], prod)
 
     if prod:
+        print("[X] Generating haraka.service [systemd]...")
+        generate_haraka_service()
+
         print("[X] Generating mail-agent.service [systemd]...")
         generate_mail_agent_service()
 
@@ -64,7 +67,7 @@ def start():
 def install_node_packages(for_production: bool = False):
     """Install the required Node.js packages."""
 
-    command = ["yarn", "install"]
+    command = ["yarn", "install", "--silent"]
     if for_production:
         command.append("--prod")
 
@@ -74,7 +77,7 @@ def install_node_packages(for_production: bool = False):
 def install_haraka_globally():
     """Install Haraka globally using Yarn."""
 
-    subprocess.run(["yarn", "global", "add", "Haraka"])
+    subprocess.run(["npm", "install", "-g", "Haraka", "--silent"])
 
 
 def setup_haraka(haraka_config: dict):
@@ -102,6 +105,11 @@ def generate_procfile(consumers_config: dict, for_production: bool = False):
 
     with open("Procfile", "w") as f:
         f.write("\n".join(lines))
+
+
+def generate_haraka_service():
+    app_dir = os.getcwd()
+    generate_systemd_service("haraka.service", app_dir=app_dir)
 
 
 def generate_mail_agent_service():
