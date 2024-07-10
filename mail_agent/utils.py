@@ -105,7 +105,7 @@ def replace_env_vars(config: Any) -> Any:
     return config
 
 
-def generate_systemd_service(
+def create_systemd_service(
     template: str, enable: bool = True, restart: bool = True, **kwargs
 ):
     cwd = os.getcwd()
