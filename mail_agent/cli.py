@@ -45,6 +45,7 @@ def setup_for_production() -> None:
     install_haraka_globally()
     setup_haraka(config["haraka"])
     generate_procfile(config["consumers"], for_production=True)
+    install_and_setup_rabbitmq(config["rabbitmq"])
     create_haraka_service()
     create_mail_agent_service()
     click.echo("[X] Setup complete!")
@@ -58,6 +59,7 @@ def setup_for_development() -> None:
     install_node_packages(for_production=False)
     setup_haraka(config["haraka"])
     generate_procfile(config["consumers"], for_production=False)
+    install_and_setup_rabbitmq(config["rabbitmq"])
     click.echo("[X] Setup complete!")
 
 
@@ -90,7 +92,11 @@ def install_haraka_globally() -> None:
     """Install Haraka globally using Yarn."""
 
     click.echo("[X] Installing Haraka globally ...")
-    subprocess.run(["npm", "install", "-g", "Haraka", "--silent"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(
+        ["npm", "install", "-g", "Haraka", "--silent"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
 
 def setup_haraka(haraka_config: dict) -> None:
@@ -121,6 +127,65 @@ def generate_procfile(consumers_config: dict, for_production: bool = False) -> N
 
     with open("Procfile", "w") as f:
         f.write("\n".join(lines))
+
+
+def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
+    """Install and setup RabbitMQ based on the configuration in the config.json file."""
+
+    def execute_command(command):
+        subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            text=True,
+        )
+
+    click.echo("[X] Installing and setting up RabbitMQ ...")
+
+    # Update system packages
+    execute_command("sudo apt update && sudo apt upgrade -y")
+
+    # Install Erlang
+    execute_command("sudo apt install -y erlang")
+
+    # Add RabbitMQ signing key
+    execute_command(
+        "wget -O- https://packages.rabbitmq.com/rabbitmq-release-signing-key.asc | sudo apt-key add -"
+    )
+
+    # Add RabbitMQ repository
+    execute_command(
+        'echo "deb https://dl.bintray.com/rabbitmq-erlang/debian $(lsb_release -cs) erlang" | sudo tee /etc/apt/sources.list.d/bintray.rabbitmq.list'
+    )
+    execute_command(
+        'echo "deb https://dl.bintray.com/rabbitmq/debian $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/bintray.rabbitmq.list'
+    )
+
+    # Install RabbitMQ
+    execute_command("sudo apt update")
+    execute_command("sudo apt install rabbitmq-server -y")
+
+    # Enable and start RabbitMQ
+    execute_command("sudo systemctl enable rabbitmq-server")
+    execute_command("sudo systemctl restart rabbitmq-server")
+
+    # Enable RabbitMQ management plugin
+    execute_command("sudo rabbitmq-plugins enable rabbitmq_management")
+
+    # Create RabbitMQ user
+    rabbitmq_username = rabbitmq_config["username"]
+    rabbitmq_password = rabbitmq_config["password"]
+    execute_command(
+        f"sudo rabbitmqctl add_user {rabbitmq_username} {rabbitmq_password}"
+    )
+    execute_command(f"sudo rabbitmqctl set_user_tags {rabbitmq_username} administrator")
+    execute_command(
+        f'sudo rabbitmqctl set_permissions -p / {rabbitmq_username} ".*" ".*" ".*"'
+    )
+
+    # Remove guest user
+    execute_command("sudo rabbitmqctl delete_user guest")
 
 
 def create_haraka_service() -> None:
