@@ -1,6 +1,8 @@
 import os
 import json
 import click
+import distro
+import platform
 import subprocess
 from dotenv import load_dotenv
 from mail_agent.haraka import Haraka
@@ -39,6 +41,10 @@ def start() -> None:
 def setup_for_production() -> None:
     """Setup the Mail Agent for production."""
 
+    if not (platform.system() == "Linux" and distro.id() == "ubuntu"):
+        click.echo("[X] This setup is only supported on Ubuntu Linux.")
+        return
+
     click.echo("[X] Setting up the Mail Agent for production ...")
     config = get_config()
     install_node_packages(for_production=True)
@@ -59,7 +65,6 @@ def setup_for_development() -> None:
     install_node_packages(for_production=False)
     setup_haraka(config["haraka"])
     generate_procfile(config["consumers"], for_production=False)
-    install_and_setup_rabbitmq(config["rabbitmq"])
     click.echo("[X] Setup complete!")
 
 
