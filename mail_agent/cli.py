@@ -208,5 +208,5 @@ def create_mail_agent_service() -> None:
     print("[X] Generating mail-agent.service [systemd] ...")
 
     app_dir = os.getcwd()
-    app_bin = os.path.join(app_dir, "env/bin")
+    app_bin = os.path.join(app_dir, "venv/bin")
     create_systemd_service("mail-agent.service", app_dir=app_dir, app_bin=app_bin)
