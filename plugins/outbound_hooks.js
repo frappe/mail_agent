@@ -1,5 +1,5 @@
-require("dotenv").config();
 const amqp = require("amqplib");
+require("dotenv").config({ path: __dirname.replace("plugins", ".env") });
 
 const RABBITMQ_HOST = process.env.RABBITMQ_HOST;
 const RABBITMQ_PORT = process.env.RABBITMQ_PORT;

@@ -15,7 +15,6 @@
             "Inbound": [
                 "tls",
                 "headers",
-                "aliases",
                 "mailauth",
                 "inbound_hooks"
             ],

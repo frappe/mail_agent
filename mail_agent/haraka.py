@@ -20,10 +20,7 @@ class Haraka:
             "plugins": "config/plugins",
             "tls.ini": "config/tls.ini",
             "smtp.ini": "config/smtp.ini",
-            "aliases": "config/aliases",
-            "mailboxes.json": "config/mailboxes.json",
             "outbound.ini": "config/outbound.ini",
-            "mail_domains.json": "config/mail_domains.json",
             "auth_enc_file.ini": "config/auth_enc_file.ini",
         }
 
