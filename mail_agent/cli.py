@@ -50,7 +50,9 @@ def setup_for_production() -> None:
     install_node_packages(for_production=True)
     install_haraka_globally()
     setup_haraka(config["haraka"])
-    generate_procfile(config["consumers"], for_production=True)
+    generate_procfile(
+        config["consumers"], config["haraka"]["agent_type"], for_production=True
+    )
     install_and_setup_rabbitmq(config["rabbitmq"])
     create_haraka_service()
     create_mail_agent_service()
@@ -64,7 +66,9 @@ def setup_for_development() -> None:
     config = get_config()
     install_node_packages(for_production=False)
     setup_haraka(config["haraka"])
-    generate_procfile(config["consumers"], for_production=False)
+    generate_procfile(
+        config["consumers"], config["haraka"]["agent_type"], for_production=False
+    )
     click.echo("[X] Setup complete!")
 
 
@@ -112,26 +116,34 @@ def setup_haraka(haraka_config: dict) -> None:
     haraka.setup(haraka_config)
 
 
-def generate_procfile(consumers_config: dict, for_production: bool = False) -> None:
+def generate_procfile(
+    consumers_config: dict, agent_type: str = "Outbound", for_production: bool = False
+) -> None:
     """Generate a Procfile based on the consumers configuration in the config.json file."""
 
     click.echo("[X] Generating Procfile ...")
 
     lines = []
-    for queue, consumer_config in consumers_config.items():
-        workers = consumer_config["workers"]
-        for worker in range(1, workers + 1):
-            worker_name = (
-                f"consumer-{queue.replace('::', '-').replace('_', '-')}-{worker}"
-            )
-            line = f"{worker_name}: python mail_agent/app.py {queue} {worker}"
-            lines.append(line)
+
+    if agent_type == "Outbound":
+        for queue, consumer_config in consumers_config.items():
+            workers = consumer_config["workers"]
+            for worker in range(1, workers + 1):
+                worker_name = (
+                    f"consumer-{queue.replace('::', '-').replace('_', '-')}-{worker}"
+                )
+                line = f"{worker_name}: python mail_agent/app.py {queue} {worker}"
+                lines.append(line)
 
     if not for_production:
-        lines += ["", "haraka: npx haraka -c ."]
+        if lines:
+            lines += ["", "haraka: npx haraka -c ."]
+        else:
+            lines = ["haraka: npx haraka -c ."]
 
-    with open("Procfile", "w") as f:
-        f.write("\n".join(lines))
+    if lines:
+        with open("Procfile", "w") as f:
+            f.write("\n".join(lines))
 
 
 def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
