@@ -34,6 +34,7 @@
     },
     "queues": {
         "mail::outgoing_mails": {
+            "max_priority": 3,
             "durable": true
         }
     },

@@ -30,29 +30,34 @@ class RabbitMQ:
         self._connection = pika.BlockingConnection(parameters)
         self._channel = self._connection.channel()
 
-    def declare_queue(self, queue: str, durable: bool = True) -> None:
-        self._channel.queue_declare(queue=queue, durable=durable)
+    def declare_queue(
+        self, queue: str, max_priority: int = 0, durable: bool = True
+    ) -> None:
+        if max_priority > 0:
+            self._channel.queue_declare(
+                queue=queue, arguments={"x-max-priority": max_priority}, durable=durable
+            )
+        else:
+            self._channel.queue_declare(queue=queue, durable=durable)
 
     def publish(
         self,
         routing_key: str,
         body: str,
         exchange: str = "",
+        priority: int = 0,
         persistent: bool = True,
     ) -> None:
-        if persistent:
-            self._channel.basic_publish(
-                exchange=exchange,
-                routing_key=routing_key,
-                body=body,
-                properties=pika.BasicProperties(
-                    delivery_mode=pika.DeliveryMode.Persistent
-                ),
-            )
-        else:
-            self._channel.basic_publish(
-                exchange=exchange, routing_key=routing_key, body=body
-            )
+        properties = {
+            "delivery_mode": pika.DeliveryMode.Persistent if persistent else None,
+            "priority": priority if priority > 0 else None,
+        }
+        self._channel.basic_publish(
+            exchange=exchange,
+            routing_key=routing_key,
+            body=body,
+            properties=pika.BasicProperties(**properties),
+        )
 
     def consume(
         self,

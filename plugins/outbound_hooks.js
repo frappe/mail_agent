@@ -11,7 +11,10 @@ const RABBITMQ_URL = `amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITM
 exports.register = async function () {
     this.connection = await amqp.connect(RABBITMQ_URL);
     this.channel = await this.connection.createChannel();
-    await this.channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
+    await this.channel.assertQueue(RABBITMQ_QUEUE, {
+        durable: true,
+        arguments: { "x-max-priority": 3 },
+    });
 };
 
 exports.hook_queue_ok = async function (next, connection) {

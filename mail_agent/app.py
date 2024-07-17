@@ -32,7 +32,11 @@ def get_rabbitmq_connection(rabbitmq_config: dict) -> RabbitMQ:
 
 def declare_queues(rabbitmq: RabbitMQ, queues_config: dict[str, dict]) -> None:
     for queue, queue_config in queues_config.items():
-        rabbitmq.declare_queue(queue=queue, durable=queue_config["durable"])
+        rabbitmq.declare_queue(
+            queue=queue,
+            max_priority=queue_config.get("max_priority", 0),
+            durable=queue_config["durable"],
+        )
 
 
 if __name__ == "__main__":
