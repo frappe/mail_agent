@@ -105,3 +105,12 @@ async function enqueue_delivery_status(channel, data) {
         persistent: true,
     });
 }
+
+exports.shutdown = async function () {
+    if (this.channel) {
+        await this.channel.close();
+    }
+    if (this.connection) {
+        await this.connection.close();
+    }
+};

@@ -91,3 +91,12 @@ function generate_random_string(length) {
         .slice(0, length)
         .toUpperCase();
 }
+
+exports.shutdown = async function () {
+    if (this.channel) {
+        await this.channel.close();
+    }
+    if (this.connection) {
+        await this.connection.close();
+    }
+};
