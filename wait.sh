@@ -2,14 +2,25 @@
 
 SERVICE_NAME=$1
 PORT=$2
-NEXT_COMMAND="${@:3}"
+NEXT_COMMAND="${@:4}"
 
-echo "Waiting for $SERVICE_NAME to start on port $PORT ..."
+HOST=${3:-localhost}
 
-while ! nc -z localhost $PORT; do
-    echo "Waiting for $SERVICE_NAME to start on port $PORT ..."
-    sleep 2
+echo "Waiting for $SERVICE_NAME to start on $HOST:$PORT ..."
+
+timeout=30
+interval=2
+elapsed=0
+
+while ! nc -z $HOST $PORT; do
+    if [ $elapsed -ge $timeout ]; then
+        echo "Error: $SERVICE_NAME did not start on $HOST:$PORT within $timeout seconds."
+        exit 1
+    fi
+    echo "Waiting for $SERVICE_NAME to start on $HOST:$PORT ..."
+    sleep $interval
+    elapsed=$((elapsed + interval))
 done
 
-echo "$SERVICE_NAME has started on port $PORT. Starting next service ..."
+echo "$SERVICE_NAME has started on $HOST:$PORT. Starting next service ..."
 exec $NEXT_COMMAND
