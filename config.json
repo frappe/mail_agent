@@ -8,9 +8,9 @@
         "retries": 3,
         "nodes": 4,
         "frequency": 0,
-        "username": "${HARAKA_USERNAME}",
-        "password": "${HARAKA_PASSWORD}",
+        "host": "${HARAKA_HOST}",
         "port": "${HARAKA_PORT}",
+        "relay_acl_allow": "::1/128",
         "plugins": {
             "Inbound": [
                 "tls",
@@ -21,7 +21,7 @@
             "Outbound": [
                 "tls",
                 "headers",
-                "haraka-plugin-auth-enc-file",
+                "relay",
                 "outbound_hooks"
             ]
         }
@@ -40,7 +40,7 @@
     },
     "consumers": {
         "mail::outgoing_mails": {
-            "workers": 8,
+            "workers": 4,
             "auto_ack": false,
             "prefetch_count": 100,
             "callback": "sendmail"

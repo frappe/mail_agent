@@ -30,7 +30,10 @@ class SMTPConnectionPool:
         connection.ehlo()
         connection.starttls()
         connection.ehlo()
-        connection.login(self.__username, self.__password)
+
+        if self.__username and self.__password:
+            connection.login(self.__username, self.__password)
+
         return connection
 
     def get_connection(self) -> "SMTP":
@@ -72,9 +75,7 @@ def send_mail(mail: dict):
     message = parsed_message.as_string()
     host = os.getenv("HARAKA_HOST")
     port = os.getenv("HARAKA_PORT")
-    username = os.getenv("HARAKA_USERNAME")
-    password = os.getenv("HARAKA_PASSWORD")
-    smtp_pool = SMTPConnectionPool(host, port, username, password)
+    smtp_pool = SMTPConnectionPool(host, port)
     connection = smtp_pool.get_connection()
     connection.sendmail(sender, recipients, message)
     print(f"Message {outgoing_mail} From `{sender}` To `{recipients}`.")

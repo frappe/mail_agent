@@ -13,10 +13,7 @@
   "dependencies": {
     "Haraka": "^3.0.3",
     "amqplib": "^0.10.4",
-    "axios": "^1.6.8",
     "dotenv": "^16.4.5",
-    "haraka-plugin-auth-enc-file": "^1.0.3",
-    "haraka-plugin-mailauth": "^1.1.0",
-    "ioredis": "^5.4.1"
+    "haraka-plugin-mailauth": "^1.1.0"
   }
 }

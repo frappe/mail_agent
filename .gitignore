@@ -13,17 +13,12 @@ mail_agent/services
 
 # Haraka
 queue
-maildir
 config/me
 config/plugins
 config/tls.ini
-config/aliases
 config/smtp.ini
-config/host_list
+config/outbound.ini
 config/tls_key.pem
 config/tls_cert.pem
-config/outbound.ini
 config/dhparams.pem
-config/mailboxes.json
-config/mail_domains.json
-config/auth_enc_file.ini
+config/relay_acl_allow

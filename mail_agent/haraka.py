@@ -7,7 +7,6 @@ from mail_agent.utils import (
     remove_directory,
     update_ini_config,
     remove_ini_config,
-    get_encrypted_password,
 )
 
 
@@ -21,7 +20,7 @@ class Haraka:
             "tls.ini": "config/tls.ini",
             "smtp.ini": "config/smtp.ini",
             "outbound.ini": "config/outbound.ini",
-            "auth_enc_file.ini": "config/auth_enc_file.ini",
+            "relay_acl_allow": "config/relay_acl_allow",
         }
 
     @staticmethod
@@ -67,12 +66,8 @@ class Haraka:
                 "received_header",
                 config["received_header"],
             )
-            update_ini_config(
-                self.get_file_path("auth_enc_file.ini"),
-                "users",
-                config["username"],
-                get_encrypted_password(config["password"]),
-            )
+
+            write_file(self.get_file_path("relay_acl_allow"), config["relay_acl_allow"])
         else:
             for directory in ["", "tmp", "new", "cur"]:
                 create_directory(os.path.join(self.maildir_base, directory))
