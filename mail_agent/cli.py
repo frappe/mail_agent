@@ -53,7 +53,10 @@ def setup_for_production() -> None:
     generate_procfile(config, for_production=True)
     install_and_setup_rabbitmq(config["rabbitmq"])
     create_haraka_service()
-    create_mail_agent_service()
+
+    if config["haraka"]["agent_type"] == "Outbound":
+        create_mail_agent_service()
+
     click.echo("[X] Setup complete!")
 
 
@@ -120,13 +123,17 @@ def generate_procfile(config: dict, for_production: bool = False) -> None:
     lines = []
     if not for_production:
         rabbitmq_config = config["rabbitmq"]
-        depends_on_service = f'./wait.sh "RabbitMQ" {rabbitmq_config["port"]} {rabbitmq_config["host"]}'
+        depends_on_service = (
+            f'./wait.sh "RabbitMQ" {rabbitmq_config["port"]} {rabbitmq_config["host"]}'
+        )
         lines = [f"haraka: {depends_on_service} npx haraka -c ."]
 
     haraka_config = config["haraka"]
     consumers_config = config["consumers"]
     if haraka_config["agent_type"] == "Outbound":
-        depends_on_service = f'./wait.sh "Haraka" {haraka_config["port"]} {haraka_config["host"]}'
+        depends_on_service = (
+            f'./wait.sh "Haraka" {haraka_config["port"]} {haraka_config["host"]}'
+        )
         for queue, consumer_config in consumers_config.items():
             workers = consumer_config["workers"]
             for worker in range(1, workers + 1):
