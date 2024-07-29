@@ -22,13 +22,21 @@ def cli() -> None:
     help="Setup the Mail Agent for production.",
     default=False,
 )
-def setup(prod) -> None:
+@click.option(
+    "--inbound",
+    is_flag=True,
+    help="Setup the Inbound Mail Agent.",
+    default=False,
+)
+def setup(prod, inbound) -> None:
     """Setup the Mail Agent by reading the configuration from the config.json file."""
 
+    agent_type = "Inbound" if inbound else "Outbound"
+
     if prod:
-        setup_for_production()
+        setup_for_production(agent_type)
     else:
-        setup_for_development()
+        setup_for_development(agent_type)
 
 
 @cli.command()
@@ -38,7 +46,7 @@ def start() -> None:
     subprocess.run(["honcho", "start"])
 
 
-def setup_for_production() -> None:
+def setup_for_production(agent_type) -> None:
     """Setup the Mail Agent for production."""
 
     if not (platform.system() == "Linux" and distro.id() == "ubuntu"):
@@ -46,7 +54,10 @@ def setup_for_production() -> None:
         return
 
     click.echo("[X] Setting up the Mail Agent for production ...")
+
     config = get_config()
+    config["haraka"]["agent_type"] = agent_type
+
     install_node_packages(for_production=True)
     install_haraka_globally()
     setup_haraka(config["haraka"])
@@ -60,11 +71,14 @@ def setup_for_production() -> None:
     click.echo("[X] Setup complete!")
 
 
-def setup_for_development() -> None:
+def setup_for_development(agent_type) -> None:
     """Setup the Mail Agent for development."""
 
     click.echo("[X] Setting up the Mail Agent for development ...")
+
     config = get_config()
+    config["haraka"]["agent_type"] = agent_type
+
     install_node_packages(for_production=False)
     setup_haraka(config["haraka"])
     generate_procfile(config, for_production=False)

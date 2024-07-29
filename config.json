@@ -1,6 +1,5 @@
 {
     "haraka": {
-        "agent_type": "Outbound",
         "me": "frappemail.com",
         "tls_key_path": null,
         "tls_cert_path": null,
