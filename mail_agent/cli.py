@@ -6,7 +6,7 @@ import platform
 import subprocess
 from dotenv import load_dotenv
 from mail_agent.haraka import Haraka
-from mail_agent.utils import replace_env_vars, create_systemd_service
+from mail_agent.utils import replace_env_vars, execute_command, create_systemd_service
 
 
 @click.group()
@@ -28,15 +28,35 @@ def cli() -> None:
     help="Setup the Inbound Mail Agent.",
     default=False,
 )
-def setup(prod, inbound) -> None:
+def setup(prod: bool = False, inbound: bool = False) -> None:
     """Setup the Mail Agent by reading the configuration from the config.json file."""
 
+    me = execute_command("hostname -f")[1].replace("\n", "")
     agent_type = "Inbound" if inbound else "Outbound"
+    tls_key_path = None
+    tls_cert_path = None
 
     if prod:
-        setup_for_production(agent_type)
+        if not (platform.system() == "Linux" and distro.id() == "ubuntu"):
+            click.echo("[X] Production setup is only supported on Ubuntu Linux.")
+            return
+
+        me = input(f"Hostname [{me}]: ") or me
+        tls_key_path = f"/etc/letsencrypt/live/{me}/privkey.pem"
+        tls_cert_path = f"/etc/letsencrypt/live/{me}/cert.pem"
+        tls_key_path = input(f"TLS Key Path [{tls_key_path}]: ") or tls_key_path
+        tls_cert_path = input(f"TLS Cert Path [{tls_cert_path}]: ") or tls_cert_path
+
+    config = get_config()
+    config["haraka"]["me"] = me
+    config["haraka"]["agent_type"] = agent_type
+    config["haraka"]["tls_key_path"] = tls_key_path
+    config["haraka"]["tls_cert_path"] = tls_cert_path
+
+    if prod:
+        setup_for_production(config)
     else:
-        setup_for_development(agent_type)
+        setup_for_development(config)
 
 
 @cli.command()
@@ -46,18 +66,10 @@ def start() -> None:
     subprocess.run(["honcho", "start"])
 
 
-def setup_for_production(agent_type) -> None:
+def setup_for_production(config: dict) -> None:
     """Setup the Mail Agent for production."""
 
-    if not (platform.system() == "Linux" and distro.id() == "ubuntu"):
-        click.echo("[X] This setup is only supported on Ubuntu Linux.")
-        return
-
     click.echo("[X] Setting up the Mail Agent for production ...")
-
-    config = get_config()
-    config["haraka"]["agent_type"] = agent_type
-
     install_node_packages(for_production=True)
     install_haraka_globally()
     setup_haraka(config["haraka"])
@@ -71,14 +83,10 @@ def setup_for_production(agent_type) -> None:
     click.echo("[X] Setup complete!")
 
 
-def setup_for_development(agent_type) -> None:
+def setup_for_development(config: dict) -> None:
     """Setup the Mail Agent for development."""
 
     click.echo("[X] Setting up the Mail Agent for development ...")
-
-    config = get_config()
-    config["haraka"]["agent_type"] = agent_type
-
     install_node_packages(for_production=False)
     setup_haraka(config["haraka"])
     generate_procfile(config, for_production=False)
@@ -93,7 +101,7 @@ def get_config() -> dict:
         config = json.load(config_file)
 
         click.echo("[X] Loading environment variables ...")
-        load_dotenv()
+        load_dotenv(override=False)
         replace_env_vars(config)
 
         return config
@@ -164,7 +172,7 @@ def generate_procfile(config: dict, for_production: bool = False) -> None:
 def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
     """Install and setup RabbitMQ based on the configuration in the config.json file."""
 
-    def execute_command(command):
+    def execute_in_shell(command):
         subprocess.run(
             command,
             stdout=subprocess.PIPE,
@@ -176,48 +184,50 @@ def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
     click.echo("[X] Installing and setting up RabbitMQ ...")
 
     # Update system packages
-    execute_command("sudo apt update && sudo apt upgrade -y")
+    execute_in_shell("sudo apt update && sudo apt upgrade -y")
 
     # Install Erlang
-    execute_command("sudo apt install -y erlang")
+    execute_in_shell("sudo apt install -y erlang")
 
     # Add RabbitMQ signing key
-    execute_command(
+    execute_in_shell(
         "wget -O- https://packages.rabbitmq.com/rabbitmq-release-signing-key.asc | sudo apt-key add -"
     )
 
     # Add RabbitMQ repository
-    execute_command(
+    execute_in_shell(
         'echo "deb https://dl.bintray.com/rabbitmq-erlang/debian $(lsb_release -cs) erlang" | sudo tee /etc/apt/sources.list.d/bintray.rabbitmq.list'
     )
-    execute_command(
+    execute_in_shell(
         'echo "deb https://dl.bintray.com/rabbitmq/debian $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/bintray.rabbitmq.list'
     )
 
     # Install RabbitMQ
-    execute_command("sudo apt update")
-    execute_command("sudo apt install rabbitmq-server -y")
+    execute_in_shell("sudo apt update")
+    execute_in_shell("sudo apt install rabbitmq-server -y")
 
     # Enable and start RabbitMQ
-    execute_command("sudo systemctl enable rabbitmq-server")
-    execute_command("sudo systemctl restart rabbitmq-server")
+    execute_in_shell("sudo systemctl enable rabbitmq-server")
+    execute_in_shell("sudo systemctl restart rabbitmq-server")
 
     # Enable RabbitMQ management plugin
-    execute_command("sudo rabbitmq-plugins enable rabbitmq_management")
+    execute_in_shell("sudo rabbitmq-plugins enable rabbitmq_management")
 
     # Create RabbitMQ user
     rabbitmq_username = rabbitmq_config["username"]
     rabbitmq_password = rabbitmq_config["password"]
-    execute_command(
+    execute_in_shell(
         f"sudo rabbitmqctl add_user {rabbitmq_username} {rabbitmq_password}"
     )
-    execute_command(f"sudo rabbitmqctl set_user_tags {rabbitmq_username} administrator")
-    execute_command(
+    execute_in_shell(
+        f"sudo rabbitmqctl set_user_tags {rabbitmq_username} administrator"
+    )
+    execute_in_shell(
         f'sudo rabbitmqctl set_permissions -p / {rabbitmq_username} ".*" ".*" ".*"'
     )
 
     # Remove guest user
-    execute_command("sudo rabbitmqctl delete_user guest")
+    execute_in_shell("sudo rabbitmqctl delete_user guest")
 
 
 def create_haraka_service() -> None:

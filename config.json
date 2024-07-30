@@ -1,8 +1,5 @@
 {
     "haraka": {
-        "me": "frappemail.com",
-        "tls_key_path": null,
-        "tls_cert_path": null,
         "received_header": "Frappe Mail Agent",
         "retries": 3,
         "nodes": 4,
