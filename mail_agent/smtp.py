@@ -64,10 +64,11 @@ def send_mail(mail: dict):
     recipients = mail.get("recipients", [])
     parsed_message = Parser(policy=policy.default).parsestr(mail["message"])
 
-    for type in ["To", "Cc", "Bcc"]:
-        if rcpts := parsed_message[type]:
-            for rcpt in rcpts.split(","):
-                recipients.append(rcpt.strip())
+    if not recipients:
+        for type in ["To", "Cc", "Bcc"]:
+            if rcpts := parsed_message[type]:
+                for rcpt in rcpts.split(","):
+                    recipients.append(rcpt.strip())
 
     del parsed_message["Bcc"]
 
