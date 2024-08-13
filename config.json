@@ -12,12 +12,13 @@
                 "tls",
                 "headers",
                 "mailauth",
+                "enforce_rdns",
                 "inbound_hooks"
             ],
             "Outbound": [
                 "tls",
-                "headers",
                 "relay",
+                "headers",
                 "outbound_hooks"
             ]
         }
