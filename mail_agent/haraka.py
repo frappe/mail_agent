@@ -3,8 +3,6 @@ from mail_agent.utils import (
     write_file,
     create_file,
     execute_command,
-    create_directory,
-    remove_directory,
     update_ini_config,
     remove_ini_config,
 )
@@ -20,6 +18,7 @@ class Haraka:
             "smtp.ini": "config/smtp.ini",
             "outbound.ini": "config/outbound.ini",
             "relay_acl_allow": "config/relay_acl_allow",
+            "spamassassin.ini": "config/spamassassin.ini",
         }
 
     @staticmethod
@@ -47,7 +46,7 @@ class Haraka:
         for file_key, file_path in self.config_files.items():
             create_file(self.get_file_path(file_key))
 
-        if config["agent_type"] == "Outbound":
+        if config["agent_type"] == "outbound":
             smtp_config = {
                 "listen": f"[::0]:{config['port']}",
                 "nodes": str(config["nodes"]),
@@ -65,6 +64,15 @@ class Haraka:
             )
 
             write_file(self.get_file_path("relay_acl_allow"), config["relay_acl_allow"])
+        else:
+            spamassassin_config = {
+                "host": config["spamassassin_host"],
+                "port": config["spamassassin_port"],
+            }
+            for key, value in spamassassin_config.items():
+                update_ini_config(
+                    self.get_file_path("spamassassin.ini"), "main", key, value
+                )
 
         write_file(self.get_file_path("me"), config["me"])
         write_file(

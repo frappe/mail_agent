@@ -19,6 +19,7 @@ pip install --editable .
 Follow these steps to set up Mail Agent for development:
 
 - #### Prerequisites
+
   Before setting up Mail Agent, ensure you have the following:
 
   - **Yarn**: A package manager that simplifies working with JavaScript projects.
@@ -34,6 +35,7 @@ Follow these steps to set up Mail Agent for development:
   ```
 
 - #### Set Up Mail Agent
+
   This command will install Node packages, set up Haraka, and generate a Procfile to manage processes.
 
   ```bash
@@ -50,6 +52,7 @@ Follow these steps to set up Mail Agent for development:
 For production deployment on Ubuntu, follow these steps:
 
 - #### Install Required Packages
+
   Ensure you have the necessary tools and libraries installed:
 
   ```bash
@@ -57,6 +60,7 @@ For production deployment on Ubuntu, follow these steps:
   ```
 
 - #### Install Node.js, npm, and Yarn
+
   Set up Node.js and Yarn, which are required for running `Haraka`:
 
   ```bash
@@ -66,6 +70,7 @@ For production deployment on Ubuntu, follow these steps:
   ```
 
 - #### Obtain a TLS Certificate (Optional)
+
   If you want to obtain TLS certificate for your Mail Agent from Let's Encrypt, follow these steps:
 
   - Install Certbot:
@@ -78,6 +83,7 @@ For production deployment on Ubuntu, follow these steps:
     ```
 
 - #### Configure Environment Variables (Optional)
+
   Customize your RabbitMQ credentials by updating the `.env` file or exporting them directly:
 
   - Update `.env`:
@@ -91,6 +97,7 @@ For production deployment on Ubuntu, follow these steps:
     ```
 
 - #### Set Up Mail Agent
+
   This command will install Node packages, set up Haraka, generate a Procfile, install RabbitMQ, and create systemd services:
 
   ```bash
@@ -98,9 +105,16 @@ For production deployment on Ubuntu, follow these steps:
   ```
 
 - #### Verify Services
+
   Ensure that all services are running correctly:
+
   ```bash
   sudo systemctl status rabbitmq-server
   sudo systemctl status haraka
-  sudo systemctl status mail-agent   # If outbound
+
+  # Inbound
+  sudo systemctl status spamassassin
+
+  # Outbound
+  sudo systemctl status mail-agent
   ```

@@ -913,7 +913,7 @@ haraka-message-stream@^1.2.0, haraka-message-stream@^1.2.1:
   resolved "https://registry.yarnpkg.com/haraka-message-stream/-/haraka-message-stream-1.2.1.tgz#3da7583d79f02dd2c3c299e76f4267dd114a108c"
   integrity sha512-j8sDJiUQuRYXgl7dgxRXYXStlS1zYshCPm1oPU7DUYZcATiw8V9Kt+jO2hF97bFnvF+FDTtBmuk0oJa03rVbXA==
 
-haraka-net-utils@^1.3.5, haraka-net-utils@^1.4.1, haraka-net-utils@^1.5.3, haraka-net-utils@^1.5.4:
+haraka-net-utils@^1.3.5, haraka-net-utils@^1.4.1, haraka-net-utils@^1.5.3, haraka-net-utils@^1.5.4, haraka-net-utils@^1.7.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/haraka-net-utils/-/haraka-net-utils-1.7.0.tgz#6cea3f8766eff14c829b711fc2584f8c3bf2add9"
   integrity sha512-5eqfugZFlA3WIrsycKouhcNj3jWgYexnOWsm9N6mt6unsSdTZBDAd5rHBWr+ofimA1E9Y+l1KlpA2uNSjFshRg==
@@ -1104,6 +1104,14 @@ haraka-plugin-rspamd@^1.3.1:
   dependencies:
     haraka-dsn "*"
 
+haraka-plugin-spamassassin@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/haraka-plugin-spamassassin/-/haraka-plugin-spamassassin-1.0.0.tgz#d8173a60896ccf9ba6b9c3fca99e6b50d21d7894"
+  integrity sha512-uxzz/0h27EMYSic09Z0kCCDHnLZ8zN6so2iHn96kSybCmgQEdW3VqstTV0Z4vIyJJjx4a7jaae1BsqtB4OJpiw==
+  dependencies:
+    haraka-net-utils "^1.7.0"
+    haraka-utils "^1.1.3"
+
 haraka-plugin-spf@1.2.4:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/haraka-plugin-spf/-/haraka-plugin-spf-1.2.4.tgz#7018a9cbadf749ec62a0b14d9521dea6d90e1a41"
@@ -1156,7 +1164,7 @@ haraka-tld@*, haraka-tld@^1.1.0, haraka-tld@^1.2.0, haraka-tld@^1.2.1:
   dependencies:
     punycode.js "^2.3.1"
 
-haraka-utils@*, haraka-utils@^1.0.3, haraka-utils@^1.1.1, haraka-utils@^1.1.2:
+haraka-utils@*, haraka-utils@^1.0.3, haraka-utils@^1.1.1, haraka-utils@^1.1.2, haraka-utils@^1.1.3:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/haraka-utils/-/haraka-utils-1.1.3.tgz#0c71d048f2d33759ca0bb15b2a6c5bf3564b4d1a"
   integrity sha512-Muu8eBTY1TBaASJtwIlUdmHFXOB0j2+k+VnWMBxVy1B+9Utda4EDVmtmqTW2w0HrDQfGZR8jBvWrlF9rZfpcww==

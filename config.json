@@ -7,15 +7,16 @@
         "host": "${HARAKA_HOST}",
         "port": "${HARAKA_PORT}",
         "relay_acl_allow": "::1/128\n127.0.0.1/32",
+        "spamassassin_host": "127.0.0.1",
+        "spamassassin_port": "783",
         "plugins": {
-            "Inbound": [
+            "inbound": [
                 "tls",
                 "headers",
                 "mailauth",
-                "enforce_rdns",
                 "inbound_hooks"
             ],
-            "Outbound": [
+            "outbound": [
                 "tls",
                 "relay",
                 "headers",

@@ -32,7 +32,7 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
     """Setup the Mail Agent by reading the configuration from the config.json file."""
 
     me = execute_command("hostname -f")[1].replace("\n", "")
-    agent_type = "Inbound" if inbound else "Outbound"
+    agent_type = "inbound" if inbound else "outbound"
     tls_key_path = None
     tls_cert_path = None
 
@@ -72,12 +72,13 @@ def setup_for_production(config: dict) -> None:
     click.echo("[X] Setting up the Mail Agent for production ...")
     install_node_packages(for_production=True)
     install_haraka_globally()
-    setup_haraka(config["haraka"])
+    setup_haraka(config["haraka"], for_production=True)
     generate_procfile(config, for_production=True)
     install_and_setup_rabbitmq(config["rabbitmq"])
+    install_and_setup_spamassassin()
     create_haraka_service()
 
-    if config["haraka"]["agent_type"] == "Outbound":
+    if config["haraka"]["agent_type"] == "outbound":
         create_mail_agent_service()
 
     click.echo("[X] Setup complete!")
@@ -87,9 +88,9 @@ def setup_for_development(config: dict) -> None:
     """Setup the Mail Agent for development."""
 
     click.echo("[X] Setting up the Mail Agent for development ...")
-    install_node_packages(for_production=False)
+    install_node_packages()
     setup_haraka(config["haraka"])
-    generate_procfile(config, for_production=False)
+    generate_procfile(config)
     click.echo("[X] Setup complete!")
 
 
@@ -129,10 +130,22 @@ def install_haraka_globally() -> None:
     )
 
 
-def setup_haraka(haraka_config: dict) -> None:
+def setup_haraka(haraka_config: dict, for_production: bool = False) -> None:
     """Setup the Haraka mail server configuration."""
 
     click.echo("[X] Setting up Haraka MTA ...")
+
+    if for_production:
+        additional_plugins = {
+            "inbound": ["enforce_rdns", "spamassassin"],
+            "outbound": [],
+        }
+
+        for type, plugins in additional_plugins.items():
+            for plugin in plugins:
+                if plugin not in haraka_config["plugins"][type]:
+                    haraka_config["plugins"][type].append(plugin)
+
     haraka = Haraka()
     haraka.setup(haraka_config)
 
@@ -152,7 +165,7 @@ def generate_procfile(config: dict, for_production: bool = False) -> None:
 
     haraka_config = config["haraka"]
     consumers_config = config["consumers"]
-    if haraka_config["agent_type"] == "Outbound":
+    if haraka_config["agent_type"] == "outbound":
         depends_on_service = (
             f'./wait.sh "Haraka" {haraka_config["port"]} {haraka_config["host"]}'
         )
@@ -172,22 +185,13 @@ def generate_procfile(config: dict, for_production: bool = False) -> None:
 def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
     """Install and setup RabbitMQ based on the configuration in the config.json file."""
 
-    def execute_in_shell(command):
-        subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-            text=True,
-        )
-
     click.echo("[X] Installing and setting up RabbitMQ ...")
 
     # Update system packages
     execute_in_shell("sudo apt update && sudo apt upgrade -y")
 
     # Install Erlang
-    execute_in_shell("sudo apt install -y erlang")
+    execute_in_shell("sudo apt install erlang -y")
 
     # Add RabbitMQ signing key
     execute_in_shell(
@@ -206,9 +210,9 @@ def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
     execute_in_shell("sudo apt update")
     execute_in_shell("sudo apt install rabbitmq-server -y")
 
-    # Enable and start RabbitMQ
-    execute_in_shell("sudo systemctl enable rabbitmq-server")
+    # Restart and Enable and RabbitMQ
     execute_in_shell("sudo systemctl restart rabbitmq-server")
+    execute_in_shell("sudo systemctl enable rabbitmq-server")
 
     # Enable RabbitMQ management plugin
     execute_in_shell("sudo rabbitmq-plugins enable rabbitmq_management")
@@ -230,6 +234,16 @@ def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
     execute_in_shell("sudo rabbitmqctl delete_user guest")
 
 
+def install_and_setup_spamassassin():
+    # Install SpamAssassin
+    execute_in_shell("sudo apt update")
+    execute_in_shell("sudo apt install spamassassin -y")
+
+    # Restart and Enable and SpamAssassin
+    execute_in_shell("sudo systemctl restart spamassassin")
+    execute_in_shell("sudo systemctl enable spamassassin")
+
+
 def create_haraka_service() -> None:
     """Create a systemd service for the Haraka mail server."""
 
@@ -247,3 +261,13 @@ def create_mail_agent_service() -> None:
     app_dir = os.getcwd()
     app_bin = os.path.join(app_dir, "venv/bin")
     create_systemd_service("mail-agent.service", app_dir=app_dir, app_bin=app_bin)
+
+
+def execute_in_shell(command):
+    subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+        text=True,
+    )
