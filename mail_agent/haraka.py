@@ -13,7 +13,6 @@ from mail_agent.utils import (
 class Haraka:
     def __init__(self) -> None:
         self.haraka_local = os.getcwd()
-        self.maildir_base = os.path.join(self.haraka_local, "maildir")
         self.config_files = {
             "me": "config/me",
             "plugins": "config/plugins",
@@ -49,8 +48,6 @@ class Haraka:
             create_file(self.get_file_path(file_key))
 
         if config["agent_type"] == "Outbound":
-            remove_directory(self.maildir_base)
-
             smtp_config = {
                 "listen": f"[::0]:{config['port']}",
                 "nodes": str(config["nodes"]),
@@ -68,9 +65,6 @@ class Haraka:
             )
 
             write_file(self.get_file_path("relay_acl_allow"), config["relay_acl_allow"])
-        else:
-            for directory in ["", "tmp", "new", "cur"]:
-                create_directory(os.path.join(self.maildir_base, directory))
 
         write_file(self.get_file_path("me"), config["me"])
         write_file(
