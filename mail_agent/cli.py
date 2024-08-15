@@ -235,6 +235,10 @@ def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
 
 
 def install_and_setup_spamassassin():
+    """Install and setup SpamAssassin."""
+
+    click.echo("[X] Installing and setting up SpamAssassin ...")
+
     # Install SpamAssassin
     execute_in_shell("sudo apt update")
     execute_in_shell("sudo apt install spamassassin -y")
