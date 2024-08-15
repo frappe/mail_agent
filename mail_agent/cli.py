@@ -137,7 +137,7 @@ def setup_haraka(haraka_config: dict, for_production: bool = False) -> None:
 
     if for_production:
         additional_plugins = {
-            "inbound": ["enforce_rdns", "spamassassin"],
+            "inbound": ["ip_blacklist", "enforce_rdns", "spamassassin"],
             "outbound": [],
         }
 
