@@ -75,7 +75,10 @@ def setup_for_production(config: dict) -> None:
     setup_haraka(config["haraka"], for_production=True)
     generate_procfile(config, for_production=True)
     install_and_setup_rabbitmq(config["rabbitmq"])
-    install_and_setup_spamassassin()
+
+    if config["haraka"]["agent_type"] == "inbound":
+        install_and_setup_spamassassin()
+
     create_haraka_service()
 
     if config["haraka"]["agent_type"] == "outbound":
