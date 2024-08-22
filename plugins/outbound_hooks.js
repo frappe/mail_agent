@@ -9,108 +9,154 @@ const RABBITMQ_QUEUE = "mail_agent::outgoing_mails_status";
 const RABBITMQ_URL = `amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}`;
 
 exports.register = async function () {
-    this.connection = await amqp.connect(RABBITMQ_URL);
-    this.channel = await this.connection.createChannel();
-    await this.channel.assertQueue(RABBITMQ_QUEUE, {
-        durable: true,
-        arguments: { "x-max-priority": 3 },
-    });
+    try {
+        this.loginfo("Connecting to RabbitMQ...");
+        this.connection = await amqp.connect(RABBITMQ_URL);
+        this.channel = await this.connection.createChannel();
+        await this.channel.assertQueue(RABBITMQ_QUEUE, {
+            durable: true,
+            arguments: { "x-max-priority": 3 },
+        });
+        this.loginfo("RabbitMQ connection and channel established.");
+    } catch (error) {
+        this.logerror(`Failed to connect to RabbitMQ: ${error.message}`);
+        throw error;
+    }
 };
 
 exports.hook_queue_ok = async function (next, connection) {
     if (!connection.relaying) {
-        return next(); // OK, skip for inbound
+        return next(); // Skip for inbound
     }
 
-    const queue_id = connection.transaction.uuid;
-    const outgoing_mail = connection.transaction.header
-        .get("X-FM-OM")
-        .replace(/(\r\n|\n|\r)/gm, "");
+    try {
+        const queue_id = connection.transaction.uuid;
+        const outgoing_mail = connection.transaction.header
+            .get("X-FM-OM")
+            .replace(/(\r\n|\n|\r)/gm, "");
 
-    connection.transaction.notes.queue_id = queue_id;
-    connection.transaction.notes.outgoing_mail = outgoing_mail;
+        connection.transaction.notes.queue_id = queue_id;
+        connection.transaction.notes.outgoing_mail = outgoing_mail;
 
-    const data = {
-        hook: "queue_ok",
-        queue_id: queue_id,
-        outgoing_mail: outgoing_mail,
-    };
-    await enqueue_delivery_status(this.channel, data);
+        const data = {
+            hook: "queue_ok",
+            queue_id: queue_id,
+            outgoing_mail: outgoing_mail,
+        };
+
+        await enqueue_delivery_status(this.channel, data);
+        this.loginfo(`Queue OK status enqueued for ${queue_id}`);
+    } catch (error) {
+        this.logerror(`Error processing hook_queue_ok: ${error.message}`);
+    }
 
     return next();
 };
 
 exports.hook_deferred = async function (next, hmail, params) {
-    const rcpt_to = hmail.todo.rcpt_to;
-    const queue_id = hmail.todo.uuid.replace(/\.\d+$/, "");
-    const outgoing_mail = hmail.notes.outgoing_mail;
+    try {
+        const rcpt_to = hmail.todo.rcpt_to;
+        const queue_id = hmail.todo.uuid.replace(/\.\d+$/, "");
+        const outgoing_mail = hmail.notes.outgoing_mail;
 
-    const data = {
-        rcpt_to: rcpt_to,
-        hook: "deferred",
-        queue_id: queue_id,
-        retries: hmail.num_failures - 1,
-        outgoing_mail: outgoing_mail,
-        action_at: new Date().toISOString(),
-    };
+        const data = {
+            rcpt_to: rcpt_to,
+            hook: "deferred",
+            queue_id: queue_id,
+            retries: hmail.num_failures - 1,
+            outgoing_mail: outgoing_mail,
+            action_at: new Date().toISOString(),
+        };
 
-    if (hmail.num_failures <= 3) {
+        if (hmail.num_failures <= 3) {
+            await enqueue_delivery_status(this.channel, data);
+            this.loginfo(`Deferred status enqueued for ${queue_id}`);
+            return next();
+        }
+
+        data.hook = "bounce";
         await enqueue_delivery_status(this.channel, data);
-        return next();
+        this.logwarn(`Mail bounced after max retries for ${queue_id}`);
+        return next(OK); // OK, drop the mail completely.
+    } catch (error) {
+        this.logerror(`Error processing hook_deferred: ${error.message}`);
+        return next(); // Proceed to next hook regardless of the error
     }
-
-    data.hook = "bounce";
-    await enqueue_delivery_status(this.channel, data);
-
-    return next(OK); // OK, drop the mail completely.
 };
 
 exports.hook_bounce = async function (next, hmail, error) {
-    const rcpt_to = hmail.todo.rcpt_to;
-    const queue_id = hmail.todo.uuid.replace(/\.\d+$/, "");
-    const outgoing_mail = hmail.notes.outgoing_mail;
+    try {
+        const rcpt_to = hmail.todo.rcpt_to;
+        const queue_id = hmail.todo.uuid.replace(/\.\d+$/, "");
+        const outgoing_mail = hmail.notes.outgoing_mail;
 
-    const data = {
-        hook: "bounce",
-        rcpt_to: rcpt_to,
-        queue_id: queue_id,
-        retries: hmail.num_failures,
-        outgoing_mail: outgoing_mail,
-        action_at: new Date().toISOString(),
-    };
-    await enqueue_delivery_status(this.channel, data);
+        const data = {
+            hook: "bounce",
+            rcpt_to: rcpt_to,
+            queue_id: queue_id,
+            retries: hmail.num_failures,
+            outgoing_mail: outgoing_mail,
+            action_at: new Date().toISOString(),
+        };
+
+        await enqueue_delivery_status(this.channel, data);
+        this.logwarn(`Bounce status enqueued for ${queue_id}`);
+    } catch (error) {
+        this.logerror(`Error processing hook_bounce: ${error.message}`);
+    }
 
     return next(OK); // OK, don't send bounce message to the originating sender.
 };
 
 exports.hook_delivered = async function (next, hmail, params) {
-    const queue_id = hmail.todo.uuid.replace(/\.\d+$/, "");
-    const outgoing_mail = hmail.notes.outgoing_mail;
+    try {
+        const queue_id = hmail.todo.uuid.replace(/\.\d+$/, "");
+        const outgoing_mail = hmail.notes.outgoing_mail;
 
-    const data = {
-        params: params,
-        hook: "delivered",
-        queue_id: queue_id,
-        retries: hmail.num_failures,
-        outgoing_mail: outgoing_mail,
-        action_at: new Date().toISOString(),
-    };
-    await enqueue_delivery_status(this.channel, data);
+        const data = {
+            params: params,
+            hook: "delivered",
+            queue_id: queue_id,
+            retries: hmail.num_failures,
+            outgoing_mail: outgoing_mail,
+            action_at: new Date().toISOString(),
+        };
+
+        await enqueue_delivery_status(this.channel, data);
+        this.loginfo(`Delivered status enqueued for ${queue_id}`);
+    } catch (error) {
+        this.logerror(`Error processing hook_delivered: ${error.message}`);
+    }
 
     return next();
 };
 
 async function enqueue_delivery_status(channel, data) {
-    await channel.sendToQueue(RABBITMQ_QUEUE, Buffer.from(JSON.stringify(data)), {
-        persistent: true,
-    });
+    try {
+        await channel.sendToQueue(
+            RABBITMQ_QUEUE,
+            Buffer.from(JSON.stringify(data)),
+            {
+                persistent: true,
+            }
+        );
+    } catch (error) {
+        console.error(`Error enqueueing delivery status: ${error.message}`);
+        throw error;
+    }
 }
 
 exports.shutdown = async function () {
-    if (this.channel) {
-        await this.channel.close();
-    }
-    if (this.connection) {
-        await this.connection.close();
+    try {
+        if (this.channel) {
+            await this.channel.close();
+            this.loginfo("RabbitMQ channel closed.");
+        }
+        if (this.connection) {
+            await this.connection.close();
+            this.loginfo("RabbitMQ connection closed.");
+        }
+    } catch (error) {
+        this.logerror(`Error during shutdown: ${error.message}`);
     }
 };
