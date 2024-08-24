@@ -74,7 +74,6 @@ def setup_for_production(config: dict) -> None:
     install_haraka_globally()
     setup_haraka(config["haraka"], for_production=True)
     generate_procfile(config, for_production=True)
-    install_and_setup_rabbitmq(config["rabbitmq"])
 
     if config["haraka"]["agent_type"] == "inbound":
         install_and_setup_spamassassin()
@@ -183,58 +182,6 @@ def generate_procfile(config: dict, for_production: bool = False) -> None:
 
     with open("Procfile", "w") as f:
         f.write("\n".join(lines))
-
-
-def install_and_setup_rabbitmq(rabbitmq_config: dict) -> None:
-    """Install and setup RabbitMQ based on the configuration in the config.json file."""
-
-    click.echo("[X] Installing and setting up RabbitMQ ...")
-
-    # Update system packages
-    execute_in_shell("sudo apt update && sudo apt upgrade -y")
-
-    # Install Erlang
-    execute_in_shell("sudo apt install erlang -y")
-
-    # Add RabbitMQ signing key
-    execute_in_shell(
-        "wget -O- https://packages.rabbitmq.com/rabbitmq-release-signing-key.asc | sudo apt-key add -"
-    )
-
-    # Add RabbitMQ repository
-    execute_in_shell(
-        'echo "deb https://dl.bintray.com/rabbitmq-erlang/debian $(lsb_release -cs) erlang" | sudo tee /etc/apt/sources.list.d/bintray.rabbitmq.list'
-    )
-    execute_in_shell(
-        'echo "deb https://dl.bintray.com/rabbitmq/debian $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/bintray.rabbitmq.list'
-    )
-
-    # Install RabbitMQ
-    execute_in_shell("sudo apt update")
-    execute_in_shell("sudo apt install rabbitmq-server -y")
-
-    # Restart and Enable and RabbitMQ
-    execute_in_shell("sudo systemctl restart rabbitmq-server")
-    execute_in_shell("sudo systemctl enable rabbitmq-server")
-
-    # Enable RabbitMQ management plugin
-    execute_in_shell("sudo rabbitmq-plugins enable rabbitmq_management")
-
-    # Create RabbitMQ user
-    rabbitmq_username = rabbitmq_config["username"]
-    rabbitmq_password = rabbitmq_config["password"]
-    execute_in_shell(
-        f"sudo rabbitmqctl add_user {rabbitmq_username} {rabbitmq_password}"
-    )
-    execute_in_shell(
-        f"sudo rabbitmqctl set_user_tags {rabbitmq_username} administrator"
-    )
-    execute_in_shell(
-        f'sudo rabbitmqctl set_permissions -p / {rabbitmq_username} ".*" ".*" ".*"'
-    )
-
-    # Remove guest user
-    execute_in_shell("sudo rabbitmqctl delete_user guest")
 
 
 def install_and_setup_spamassassin():
