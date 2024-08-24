@@ -1,12 +1,13 @@
 const amqp = require("amqplib");
-require("dotenv").config({ path: __dirname.replace("plugins", ".env") });
 
+const AGENT_ID = process.env.AGENT_ID;
 const RABBITMQ_HOST = process.env.RABBITMQ_HOST;
 const RABBITMQ_PORT = process.env.RABBITMQ_PORT;
+const RABBITMQ_VIRTUAL_HOST = process.env.RABBITMQ_VIRTUAL_HOST;
 const RABBITMQ_USERNAME = process.env.RABBITMQ_USERNAME;
 const RABBITMQ_PASSWORD = process.env.RABBITMQ_PASSWORD;
 const RABBITMQ_QUEUE = "mail_agent::outgoing_mails_status";
-const RABBITMQ_URL = `amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}`;
+const RABBITMQ_URL = `amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}/${RABBITMQ_VIRTUAL_HOST}`;
 
 exports.register = async function () {
     try {
@@ -138,6 +139,7 @@ async function enqueue_delivery_status(channel, data) {
             Buffer.from(JSON.stringify(data)),
             {
                 persistent: true,
+                appId: AGENT_ID,
             }
         );
     } catch (error) {

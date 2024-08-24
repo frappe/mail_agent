@@ -4,56 +4,86 @@ import click
 import distro
 import platform
 import subprocess
-from dotenv import load_dotenv
 from mail_agent.haraka import Haraka
-from mail_agent.utils import replace_env_vars, execute_command, create_systemd_service
+from mail_agent.rabbitmq import RabbitMQ
+from mail_agent.utils import (
+    replace_env_vars,
+    execute_command,
+    create_systemd_service,
+)
 
 
 @click.group()
 def cli() -> None:
+    """Mail Agent CLI for setting up and managing the Mail Agent."""
+
     pass
 
 
 @cli.command()
 @click.option(
     "--prod",
-    "--production",
     is_flag=True,
-    help="Setup the Mail Agent for production.",
+    help="Setup the Mail Agent for production on Ubuntu Linux.",
     default=False,
 )
 @click.option(
     "--inbound",
     is_flag=True,
-    help="Setup the Inbound Mail Agent.",
+    help="Setup the Mail Agent as an Inbound server.",
     default=False,
 )
 def setup(prod: bool = False, inbound: bool = False) -> None:
     """Setup the Mail Agent by reading the configuration from the config.json file."""
 
-    me = execute_command("hostname -f")[1].replace("\n", "")
+    if prod and not (platform.system() == "Linux" and distro.id() == "ubuntu"):
+        click.echo("❌ [ERROR] Production setup is only supported on Ubuntu Linux.")
+        return
+
+    click.echo("🛠️ [INFO] Initiating Mail Agent setup...")
+    me = execute_command("hostname -f")[1].strip()
     agent_type = "inbound" if inbound else "outbound"
-    tls_key_path = None
-    tls_cert_path = None
 
-    if prod:
-        if not (platform.system() == "Linux" and distro.id() == "ubuntu"):
-            click.echo("[X] Production setup is only supported on Ubuntu Linux.")
-            return
+    environment_vars = {
+        "AGENT_ID": ask_for_input("Agent ID", me),
+        "HARAKA_HOST": ask_for_input("Haraka Host", "localhost"),
+        "HARAKA_PORT": ask_for_input("Haraka Port", 25),
+        "RABBITMQ_HOST": ask_for_input(
+            "RabbitMQ Host", "localhost" if not prod else None, required=True
+        ),
+        "RABBITMQ_PORT": ask_for_input("RabbitMQ Port", 5672),
+        "RABBITMQ_VIRTUAL_HOST": ask_for_input("RabbitMQ Virtual Host", "/"),
+        "RABBITMQ_USERNAME": ask_for_input(
+            "RabbitMQ Username", "guest" if not prod else None, required=True
+        ),
+        "RABBITMQ_PASSWORD": ask_for_input(
+            "RabbitMQ Password", "guest" if not prod else None, required=True
+        ),
+        "FRAPPE_BLACKLIST_HOST": ask_for_input(
+            "Frappe Blacklist Host", "https://frappemail.com"
+        ),
+    }
 
-        me = input(f"Hostname [{me}]: ") or me
-        tls_key_path = f"/etc/letsencrypt/live/{me}/privkey.pem"
-        tls_cert_path = f"/etc/letsencrypt/live/{me}/cert.pem"
-        tls_key_path = input(f"TLS Key Path [{tls_key_path}]: ") or tls_key_path
-        tls_cert_path = input(f"TLS Cert Path [{tls_cert_path}]: ") or tls_cert_path
+    test_rabbitmq_connection(environment_vars)
+    update_os_environment(environment_vars)
 
     config = get_config()
-    config["haraka"]["me"] = me
-    config["haraka"]["agent_type"] = agent_type
-    config["haraka"]["tls_key_path"] = tls_key_path
-    config["haraka"]["tls_cert_path"] = tls_cert_path
+    config["haraka"].update(
+        {
+            "me": ask_for_input("Hostname", me),
+            "agent_type": agent_type,
+            "tls_key_path": None,
+            "tls_cert_path": None,
+        }
+    )
 
     if prod:
+        config["haraka"]["tls_key_path"] = ask_for_input(
+            "TLS Key Path", f"/etc/letsencrypt/live/{me}/privkey.pem"
+        )
+        config["haraka"]["tls_cert_path"] = ask_for_input(
+            "TLS Cert Path", f"/etc/letsencrypt/live/{me}/cert.pem"
+        )
         setup_for_production(config)
     else:
         setup_for_development(config)
@@ -63,13 +93,14 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
 def start() -> None:
     """Start the Mail Agent using Honcho."""
 
+    click.echo("🚀 [INFO] Starting the Mail Agent with Honcho...")
     subprocess.run(["honcho", "start"])
 
 
 def setup_for_production(config: dict) -> None:
     """Setup the Mail Agent for production."""
 
-    click.echo("[X] Setting up the Mail Agent for production ...")
+    click.echo("🔧 [INFO] Setting up the Mail Agent for production...")
     install_node_packages(for_production=True)
     install_haraka_globally()
     setup_haraka(config["haraka"], for_production=True)
@@ -83,37 +114,107 @@ def setup_for_production(config: dict) -> None:
     if config["haraka"]["agent_type"] == "outbound":
         create_mail_agent_service()
 
-    click.echo("[X] Setup complete!")
+    click.echo("✅ [SUCCESS] Production setup complete!")
 
 
 def setup_for_development(config: dict) -> None:
     """Setup the Mail Agent for development."""
 
-    click.echo("[X] Setting up the Mail Agent for development ...")
+    click.echo("🔧 [INFO] Setting up the Mail Agent for development...")
     install_node_packages()
     setup_haraka(config["haraka"])
     generate_procfile(config)
-    click.echo("[X] Setup complete!")
+    click.echo("✅ [SUCCESS] Development setup complete!")
+
+
+def ask_for_input(
+    prompt: str, default: str | int | None = None, required: bool = False
+) -> str:
+    """Ask for user input with an optional default value."""
+
+    if default:
+        return input(f"{prompt} [{default}]: ") or default
+
+    if required:
+        return input(f"{prompt}: ") or ask_for_input(prompt, required=True)
+
+    return input(f"{prompt}: ")
+
+
+def test_rabbitmq_connection(data: dict) -> None:
+    """Test the RabbitMQ connection using the provided data."""
+
+    click.echo("🔗 [INFO] Testing RabbitMQ connection...")
+
+    rmq = RabbitMQ(
+        host=data["RABBITMQ_HOST"],
+        port=data["RABBITMQ_PORT"],
+        virtual_host=data["RABBITMQ_VIRTUAL_HOST"],
+        username=data["RABBITMQ_USERNAME"],
+        password=data["RABBITMQ_PASSWORD"],
+    )
+    rmq._disconnect()
+
+    click.echo("✅ [SUCCESS] RabbitMQ connection successful!")
+
+
+def update_os_environment(env_vars: dict) -> None:
+    """Update the OS environment variables."""
+
+    click.echo("📜 [INFO] Updating OS environment variables...")
+    for key, value in env_vars.items():
+        os.environ[key] = str(value)
+
+    if platform.system() in ["Linux", "Darwin"]:
+        shell_profile = os.path.expanduser("~/.bashrc")
+        if os.path.isfile(os.path.expanduser("~/.zshrc")):
+            shell_profile = os.path.expanduser("~/.zshrc")
+
+        with open(shell_profile, "r") as file:
+            lines = file.readlines()
+
+        new_lines = []
+        for line in lines:
+            if any(line.startswith(f"export {key}=") for key in env_vars.keys()):
+                continue
+            new_lines.append(line)
+
+        for key, value in env_vars.items():
+            new_lines.append(f'export {key}="{value}"\n')
+
+        with open(shell_profile, "w") as file:
+            file.writelines(new_lines)
+
+    elif platform.system() == "Windows":
+        import winreg
+
+        for key, value in env_vars.items():
+            reg_key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE
+            )
+            winreg.SetValueEx(reg_key, key, 0, winreg.REG_EXPAND_SZ, value)
+            winreg.CloseKey(reg_key)
+
+    click.echo("✅ [SUCCESS] OS environment variables have been updated.")
 
 
 def get_config() -> dict:
     """Return the configuration from the config.json file."""
 
-    click.echo("[X] Reading configuration from config.json ...")
+    click.echo("📄 [INFO] Reading configuration from config.json...")
     with open("config.json", "r") as config_file:
         config = json.load(config_file)
 
-        click.echo("[X] Loading environment variables ...")
-        load_dotenv(override=False)
-        replace_env_vars(config)
+    click.echo("🔄 [INFO] Loading environment variables...")
+    replace_env_vars(config)
 
-        return config
+    return config
 
 
 def install_node_packages(for_production: bool = False) -> None:
     """Install the required Node.js packages."""
 
-    click.echo("[X] Installing Node.js packages ...")
+    click.echo("📦 [INFO] Installing Node.js packages...")
     command = ["yarn", "install", "--silent"]
     if for_production:
         command.append("--prod")
@@ -124,7 +225,7 @@ def install_node_packages(for_production: bool = False) -> None:
 def install_haraka_globally() -> None:
     """Install Haraka globally using Yarn."""
 
-    click.echo("[X] Installing Haraka globally ...")
+    click.echo("🌍 [INFO] Installing Haraka globally...")
     subprocess.run(
         ["npm", "install", "-g", "Haraka", "--silent"],
         stdout=subprocess.PIPE,
@@ -135,7 +236,7 @@ def install_haraka_globally() -> None:
 def setup_haraka(haraka_config: dict, for_production: bool = False) -> None:
     """Setup the Haraka mail server configuration."""
 
-    click.echo("[X] Setting up Haraka MTA ...")
+    click.echo("⚙️ [INFO] Configuring Haraka MTA...")
 
     if for_production:
         additional_plugins = {
@@ -155,7 +256,7 @@ def setup_haraka(haraka_config: dict, for_production: bool = False) -> None:
 def generate_procfile(config: dict, for_production: bool = False) -> None:
     """Generate a Procfile based on the consumers configuration in the config.json file."""
 
-    click.echo("[X] Generating Procfile ...")
+    click.echo("📝 [INFO] Generating Procfile...")
 
     lines = []
     if not for_production:
@@ -184,16 +285,12 @@ def generate_procfile(config: dict, for_production: bool = False) -> None:
         f.write("\n".join(lines))
 
 
-def install_and_setup_spamassassin():
+def install_and_setup_spamassassin() -> None:
     """Install and setup SpamAssassin."""
 
-    click.echo("[X] Installing and setting up SpamAssassin ...")
-
-    # Install SpamAssassin
+    click.echo("🔍 [INFO] Installing and configuring SpamAssassin...")
     execute_in_shell("sudo apt update")
     execute_in_shell("sudo apt install spamassassin -y")
-
-    # Restart and Enable and SpamAssassin
     execute_in_shell("sudo systemctl restart spamassassin")
     execute_in_shell("sudo systemctl enable spamassassin")
 
@@ -201,8 +298,7 @@ def install_and_setup_spamassassin():
 def create_haraka_service() -> None:
     """Create a systemd service for the Haraka mail server."""
 
-    print("[X] Generating haraka.service [systemd] ...")
-
+    click.echo("🛠️ [INFO] Creating haraka.service [systemd]...")
     app_dir = os.getcwd()
     create_systemd_service("haraka.service", app_dir=app_dir)
 
@@ -210,14 +306,15 @@ def create_haraka_service() -> None:
 def create_mail_agent_service() -> None:
     """Create a systemd service for the Mail Agent."""
 
-    print("[X] Generating mail-agent.service [systemd] ...")
-
+    click.echo("🛠️ [INFO] Creating mail-agent.service [systemd]...")
     app_dir = os.getcwd()
     app_bin = os.path.join(app_dir, "venv/bin")
     create_systemd_service("mail-agent.service", app_dir=app_dir, app_bin=app_bin)
 
 
-def execute_in_shell(command):
+def execute_in_shell(command) -> None:
+    """Execute a command in the shell."""
+
     subprocess.run(
         command,
         stdout=subprocess.PIPE,

@@ -25,6 +25,7 @@ def get_rabbitmq_connection(rabbitmq_config: dict) -> RabbitMQ:
     return RabbitMQ(
         host=rabbitmq_config["host"],
         port=rabbitmq_config["port"],
+        virtual_host=rabbitmq_config["virtual_host"],
         username=rabbitmq_config["username"],
         password=rabbitmq_config["password"],
     )
