@@ -23,16 +23,9 @@ Follow these steps to set up Mail Agent for development:
   Before setting up Mail Agent, ensure you have the following:
 
   - **Yarn**: A package manager that simplifies working with JavaScript projects.
-    Install Yarn globally:
     ```bash
     npm install --global yarn
     ```
-
-- #### Start RabbitMQ
-
-  ```bash
-  docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-management
-  ```
 
 - #### Set Up Mail Agent
 
@@ -82,23 +75,9 @@ For production deployment on Ubuntu, follow these steps:
     sudo certbot certonly --standalone -d $(hostname -f)
     ```
 
-- #### Configure Environment Variables (Optional)
-
-  Customize your RabbitMQ credentials by updating the `.env` file or exporting them directly:
-
-  - Update `.env`:
-    ```bash
-    RABBITMQ_USERNAME="your_username"
-    RABBITMQ_PASSWORD="your_password"
-    ```
-  - Or export directly:
-    ```bash
-    export RABBITMQ_USERNAME="your_username" RABBITMQ_PASSWORD="your_password"
-    ```
-
 - #### Set Up Mail Agent
 
-  This command will install Node packages, set up Haraka, generate a Procfile, install RabbitMQ, and create systemd services:
+  This command will install Node packages, set up Haraka, generate a Procfile and create systemd services:
 
   ```bash
   mail-agent setup --prod   # Use --inbound to setup agent for inbound
@@ -109,7 +88,6 @@ For production deployment on Ubuntu, follow these steps:
   Ensure that all services are running correctly:
 
   ```bash
-  sudo systemctl status rabbitmq-server
   sudo systemctl status haraka
 
   # Inbound
