@@ -8,6 +8,7 @@ __pycache__
 .vscode
 env
 venv
+.env
 Procfile
 mail_agent/services
 

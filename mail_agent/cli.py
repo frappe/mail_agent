@@ -4,9 +4,11 @@ import click
 import distro
 import platform
 import subprocess
+from dotenv import load_dotenv
 from mail_agent.haraka import Haraka
 from mail_agent.rabbitmq import RabbitMQ
 from mail_agent.utils import (
+    write_file,
     replace_env_vars,
     execute_command,
     create_systemd_service,
@@ -44,7 +46,7 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
     me = execute_command("hostname -f")[1].strip()
     agent_type = "inbound" if inbound else "outbound"
 
-    environment_vars = {
+    env_vars = {
         "AGENT_ID": ask_for_input("Agent ID", me),
         "HARAKA_HOST": ask_for_input("Haraka Host", "localhost"),
         "HARAKA_PORT": ask_for_input("Haraka Port", 25),
@@ -64,8 +66,8 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
         ),
     }
 
-    test_rabbitmq_connection(environment_vars)
-    update_os_environment(environment_vars)
+    test_rabbitmq_connection(env_vars)
+    generate_env_file(env_vars)
 
     config = get_config()
     config["haraka"].update(
@@ -141,61 +143,36 @@ def ask_for_input(
     return input(f"{prompt}: ")
 
 
-def test_rabbitmq_connection(data: dict) -> None:
-    """Test the RabbitMQ connection using the provided data."""
+def test_rabbitmq_connection(env_vars: dict) -> None:
+    """Test the RabbitMQ connection."""
 
     click.echo("🔗 [INFO] Testing RabbitMQ connection...")
 
     rmq = RabbitMQ(
-        host=data["RABBITMQ_HOST"],
-        port=data["RABBITMQ_PORT"],
-        virtual_host=data["RABBITMQ_VIRTUAL_HOST"],
-        username=data["RABBITMQ_USERNAME"],
-        password=data["RABBITMQ_PASSWORD"],
+        host=env_vars["RABBITMQ_HOST"],
+        port=env_vars["RABBITMQ_PORT"],
+        virtual_host=env_vars["RABBITMQ_VIRTUAL_HOST"],
+        username=env_vars["RABBITMQ_USERNAME"],
+        password=env_vars["RABBITMQ_PASSWORD"],
     )
     rmq._disconnect()
 
     click.echo("✅ [SUCCESS] RabbitMQ connection successful!")
 
 
-def update_os_environment(env_vars: dict) -> None:
-    """Update the OS environment variables."""
+def generate_env_file(env_vars: dict) -> None:
+    """Generates a .env file in the current directory with the provided environment variables."""
 
-    click.echo("📜 [INFO] Updating OS environment variables...")
+    click.echo("📜 [INFO] Generating .env file...")
+
+    content = ""
     for key, value in env_vars.items():
-        os.environ[key] = str(value)
+        content += f"{key}={value}\n"
 
-    if platform.system() in ["Linux", "Darwin"]:
-        shell_profile = os.path.expanduser("~/.bashrc")
-        if os.path.isfile(os.path.expanduser("~/.zshrc")):
-            shell_profile = os.path.expanduser("~/.zshrc")
+    env_file_path = os.path.join(os.getcwd(), ".env")
+    write_file(env_file_path, content)
 
-        with open(shell_profile, "r") as file:
-            lines = file.readlines()
-
-        new_lines = []
-        for line in lines:
-            if any(line.startswith(f"export {key}=") for key in env_vars.keys()):
-                continue
-            new_lines.append(line)
-
-        for key, value in env_vars.items():
-            new_lines.append(f'export {key}="{value}"\n')
-
-        with open(shell_profile, "w") as file:
-            file.writelines(new_lines)
-
-    elif platform.system() == "Windows":
-        import winreg
-
-        for key, value in env_vars.items():
-            reg_key = winreg.OpenKey(
-                winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE
-            )
-            winreg.SetValueEx(reg_key, key, 0, winreg.REG_EXPAND_SZ, value)
-            winreg.CloseKey(reg_key)
-
-    click.echo("✅ [SUCCESS] OS environment variables have been updated.")
+    click.echo(f"✅ [INFO] .env file created at: {env_file_path}")
 
 
 def get_config() -> dict:
@@ -206,6 +183,7 @@ def get_config() -> dict:
         config = json.load(config_file)
 
     click.echo("🔄 [INFO] Loading environment variables...")
+    load_dotenv(override=False)
     replace_env_vars(config)
 
     return config

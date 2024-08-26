@@ -6,6 +6,7 @@ const amqp = require("amqplib");
 const crypto = require("crypto");
 const unlink = util.promisify(fs.unlink);
 const readFile = util.promisify(fs.readFile);
+require("dotenv").config({ path: __dirname.replace("plugins", ".env") });
 
 const AGENT_ID = process.env.AGENT_ID;
 const RABBITMQ_HOST = process.env.RABBITMQ_HOST;

@@ -50,4 +50,4 @@ if __name__ == "__main__":
 
         run(config, queue, worker_id)
     else:
-        print("Please setup the Mail Agent by running the `python setup.py`.")
+        print("Please setup the Mail Agent by running the `mail-agent setup`.")

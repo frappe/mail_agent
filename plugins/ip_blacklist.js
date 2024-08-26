@@ -1,4 +1,5 @@
 const axios = require("axios");
+require("dotenv").config({ path: __dirname.replace("plugins", ".env") });
 
 const FRAPPE_BLACKLIST_HOST = process.env.FRAPPE_BLACKLIST_HOST;
 
