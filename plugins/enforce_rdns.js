@@ -6,7 +6,7 @@ exports.register = function () {
 };
 
 exports.lookup_rdns = function (next, connection) {
-    const remote_ip = connection.remote_ip;
+    const remote_ip = connection.remote.ip;
     const message =
         "The IP address sending this message does not have a PTR record setup, or the corresponding forward DNS entry does not match the sending IP. We do not accept messages from IPs with missing PTR records.";
 
