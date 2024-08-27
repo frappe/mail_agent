@@ -44,7 +44,9 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
 
     click.echo("🛠️ [INFO] Initiating Mail Agent setup...")
     agent_type = "inbound" if inbound else "outbound"
-    me = ask_for_input("Hostname", execute_command("hostname -f")[1].strip())
+    me = ask_for_input(
+        "Hostname", execute_command("hostname -f")[1].strip(), required=True
+    )
 
     env_vars = {
         "AGENT_ID": ask_for_input("Agent ID", me),
@@ -57,7 +59,7 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
         "RABBITMQ_PORT": ask_for_input("RabbitMQ Port", 5672),
         "RABBITMQ_VIRTUAL_HOST": ask_for_input("RabbitMQ Virtual Host", "/"),
         "RABBITMQ_USERNAME": ask_for_input(
-            "RabbitMQ Username", "guest" if not prod else None, required=True
+            "RabbitMQ Username", "guest" if not prod else me
         ),
         "RABBITMQ_PASSWORD": ask_for_input(
             "RabbitMQ Password", "guest" if not prod else None, required=True
