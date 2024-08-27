@@ -47,22 +47,12 @@ class Haraka:
             create_file(self.get_file_path(file_key))
 
         if config["agent_type"] == "outbound":
-            smtp_config = {
-                "listen": f"[::0]:{config['port']}",
-                "nodes": str(config["nodes"]),
-                "max_lines": "1000",
-                "max_received": "100",
-            }
-            for key, value in smtp_config.items():
-                update_ini_config(self.get_file_path("smtp.ini"), "main", key, value)
-
             update_ini_config(
                 self.get_file_path("outbound.ini"),
                 "main",
                 "received_header",
                 config["received_header"],
             )
-
             write_file(self.get_file_path("relay_acl_allow"), config["relay_acl_allow"])
         else:
             spamassassin_config = {
@@ -73,6 +63,15 @@ class Haraka:
                 update_ini_config(
                     self.get_file_path("spamassassin.ini"), "main", key, value
                 )
+
+        smtp_config = {
+            "listen": f"[::0]:{config['port']}",
+            "nodes": str(config["nodes"]),
+            "max_lines": "1000",
+            "max_received": "100",
+        }
+        for key, value in smtp_config.items():
+            update_ini_config(self.get_file_path("smtp.ini"), "main", key, value)
 
         write_file(self.get_file_path("me"), config["me"])
         write_file(
