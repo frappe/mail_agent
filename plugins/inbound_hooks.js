@@ -20,9 +20,9 @@ const RABBITMQ_URL = `amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITM
 exports.register = async function () {
     try {
         this.loginfo("Connecting to RabbitMQ...");
-        this.connection = await amqp.connect(RABBITMQ_URL);
-        this.channel = await this.connection.createChannel();
-        await this.channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
+        this.rmq_connection = await amqp.connect(RABBITMQ_URL);
+        this.rmq_channel = await this.rmq_connection.createChannel();
+        await this.rmq_channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
         this.loginfo("RabbitMQ connection and channel established.");
     } catch (error) {
         this.logerror(`Failed to connect to RabbitMQ: ${error.message}`);
@@ -83,7 +83,7 @@ async function process_recipients(transaction, content, context) {
             context.loginfo(
                 `Sending message to RabbitMQ for recipient: ${rcpt.user}@${rcpt.host}`
             );
-            await context.channel.sendToQueue(
+            await context.rmq_channel.sendToQueue(
                 RABBITMQ_QUEUE,
                 Buffer.from(content_with_header),
                 {
@@ -121,12 +121,12 @@ function generate_random_string(length) {
 
 exports.shutdown = async function () {
     try {
-        if (this.channel) {
-            await this.channel.close();
+        if (this.rmq_channel) {
+            await this.rmq_channel.close();
             this.loginfo("RabbitMQ channel closed.");
         }
-        if (this.connection) {
-            await this.connection.close();
+        if (this.rmq_connection) {
+            await this.rmq_connection.close();
             this.loginfo("RabbitMQ connection closed.");
         }
     } catch (error) {

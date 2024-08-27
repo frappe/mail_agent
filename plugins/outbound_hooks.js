@@ -13,9 +13,9 @@ const RABBITMQ_URL = `amqp://${RABBITMQ_USERNAME}:${RABBITMQ_PASSWORD}@${RABBITM
 exports.register = async function () {
     try {
         this.loginfo("Connecting to RabbitMQ...");
-        this.connection = await amqp.connect(RABBITMQ_URL);
-        this.channel = await this.connection.createChannel();
-        await this.channel.assertQueue(RABBITMQ_QUEUE, {
+        this.rmq_connection = await amqp.connect(RABBITMQ_URL);
+        this.rmq_channel = await this.rmq_connection.createChannel();
+        await this.rmq_channel.assertQueue(RABBITMQ_QUEUE, {
             durable: true,
             arguments: { "x-max-priority": 3 },
         });
@@ -46,7 +46,7 @@ exports.hook_queue_ok = async function (next, connection) {
             outgoing_mail: outgoing_mail,
         };
 
-        await enqueue_delivery_status(this.channel, data);
+        await enqueue_delivery_status(this.rmq_channel, data);
         this.loginfo(`Queue OK status enqueued for ${queue_id}`);
     } catch (error) {
         this.logerror(`Error processing hook_queue_ok: ${error.message}`);
@@ -71,13 +71,13 @@ exports.hook_deferred = async function (next, hmail, params) {
         };
 
         if (hmail.num_failures <= 3) {
-            await enqueue_delivery_status(this.channel, data);
+            await enqueue_delivery_status(this.rmq_channel, data);
             this.loginfo(`Deferred status enqueued for ${queue_id}`);
             return next();
         }
 
         data.hook = "bounce";
-        await enqueue_delivery_status(this.channel, data);
+        await enqueue_delivery_status(this.rmq_channel, data);
         this.logwarn(`Mail bounced after max retries for ${queue_id}`);
         return next(OK); // OK, drop the mail completely.
     } catch (error) {
@@ -101,7 +101,7 @@ exports.hook_bounce = async function (next, hmail, error) {
             action_at: new Date().toISOString(),
         };
 
-        await enqueue_delivery_status(this.channel, data);
+        await enqueue_delivery_status(this.rmq_channel, data);
         this.logwarn(`Bounce status enqueued for ${queue_id}`);
     } catch (error) {
         this.logerror(`Error processing hook_bounce: ${error.message}`);
@@ -124,7 +124,7 @@ exports.hook_delivered = async function (next, hmail, params) {
             action_at: new Date().toISOString(),
         };
 
-        await enqueue_delivery_status(this.channel, data);
+        await enqueue_delivery_status(this.rmq_channel, data);
         this.loginfo(`Delivered status enqueued for ${queue_id}`);
     } catch (error) {
         this.logerror(`Error processing hook_delivered: ${error.message}`);
@@ -151,12 +151,12 @@ async function enqueue_delivery_status(channel, data) {
 
 exports.shutdown = async function () {
     try {
-        if (this.channel) {
-            await this.channel.close();
+        if (this.rmq_channel) {
+            await this.rmq_channel.close();
             this.loginfo("RabbitMQ channel closed.");
         }
-        if (this.connection) {
-            await this.connection.close();
+        if (this.rmq_connection) {
+            await this.rmq_connection.close();
             this.loginfo("RabbitMQ connection closed.");
         }
     } catch (error) {
