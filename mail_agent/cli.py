@@ -43,11 +43,12 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
         return
 
     click.echo("🛠️ [INFO] Initiating Mail Agent setup...")
-    me = execute_command("hostname -f")[1].strip()
     agent_type = "inbound" if inbound else "outbound"
+    me = ask_for_input("Hostname", execute_command("hostname -f")[1].strip())
 
     env_vars = {
         "AGENT_ID": ask_for_input("Agent ID", me),
+        "AGENT_TYPE": agent_type,
         "HARAKA_HOST": ask_for_input("Haraka Host", "localhost"),
         "HARAKA_PORT": ask_for_input("Haraka Port", 25),
         "RABBITMQ_HOST": ask_for_input(
@@ -61,10 +62,12 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
         "RABBITMQ_PASSWORD": ask_for_input(
             "RabbitMQ Password", "guest" if not prod else None, required=True
         ),
-        "FRAPPE_BLACKLIST_HOST": ask_for_input(
-            "Frappe Blacklist Host", "https://frappemail.com"
-        ),
     }
+
+    if agent_type == "inbound":
+        env_vars["FRAPPE_BLACKLIST_HOST"] = ask_for_input(
+            "Frappe Blacklist Host", "https://frappemail.com"
+        )
 
     test_rabbitmq_connection(env_vars)
     generate_env_file(env_vars)
@@ -72,7 +75,7 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
     config = get_config()
     config["haraka"].update(
         {
-            "me": ask_for_input("Hostname", me),
+            "me": me,
             "agent_type": agent_type,
             "tls_key_path": None,
             "tls_cert_path": None,
@@ -135,12 +138,12 @@ def ask_for_input(
     """Ask for user input with an optional default value."""
 
     if default:
-        return input(f"{prompt} [{default}]: ") or default
+        return input(f"🔹 {prompt} [{default}]: ") or default
 
     if required:
-        return input(f"{prompt}: ") or ask_for_input(prompt, required=True)
+        return input(f"🔹 {prompt}: ") or ask_for_input(prompt, required=True)
 
-    return input(f"{prompt}: ")
+    return input(f"🔹 {prompt}: ")
 
 
 def test_rabbitmq_connection(env_vars: dict) -> None:
