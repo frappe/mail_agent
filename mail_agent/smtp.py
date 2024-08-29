@@ -1,12 +1,26 @@
 import os
-from queue import Queue
 from email import policy
 from smtplib import SMTP
 from threading import Lock
+from queue import Queue, Empty
 from email.parser import Parser
 
 
+host = os.getenv("HARAKA_HOST", "localhost")
+port = int(os.getenv("HARAKA_PORT", 25))
+
+
 class SMTPConnectionPool:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs) -> "SMTPConnectionPool":
+        """Singleton pattern to ensure only one instance of the class is created."""
+
+        if not cls._instance:
+            cls._instance = super(SMTPConnectionPool, cls).__new__(cls)
+
+        return cls._instance
+
     def __init__(
         self,
         host: str = "localhost",
@@ -15,16 +29,22 @@ class SMTPConnectionPool:
         password: str | None = None,
         pool_size: int = 5,
     ) -> None:
-        self.__host = host
-        self.__port = port
-        self.__username = username
-        self.__password = password
-        self.__lock = Lock()
-        self.__current_pool_size = 0
-        self.__max_pool_size = pool_size
-        self.__pool = Queue(maxsize=pool_size)
+        """Initialize the SMTP connection pool."""
 
-    def __create_connection(self) -> "SMTP":
+        if not hasattr(self, "_initialized"):  # Ensure __init__ is run only once
+            self.__host = host
+            self.__port = port
+            self.__username = username
+            self.__password = password
+
+            self._lock = Lock()
+            self._pool_size = pool_size
+            self._pool = Queue(maxsize=pool_size)
+            self._initialized = True
+
+    def __create_new_connection(self) -> None:
+        """Create a new SMTP connection and add it to the pool."""
+
         connection = SMTP(self.__host, self.__port)
         connection.connect(self.__host, self.__port)
         connection.ehlo()
@@ -34,32 +54,42 @@ class SMTPConnectionPool:
         if self.__username and self.__password:
             connection.login(self.__username, self.__password)
 
-        return connection
+        self._pool.put(connection)
 
-    def get_connection(self) -> "SMTP":
-        with self.__lock:
-            if not self.__pool.empty():
-                return self.__pool.get()
+    def get_connection(self) -> SMTP:
+        """Get an SMTP connection from the pool."""
 
-            elif self.__current_pool_size < self.__max_pool_size:
-                connection = self.__create_connection()
-                self.__current_pool_size += 1
-                return connection
+        with self._lock:
+            if self._pool.empty() and self._pool.qsize() < self._pool_size:
+                self.__create_new_connection()
 
-            return self.__pool.get()
+            try:
+                return self._pool.get(timeout=5)
+            except Empty:
+                raise RuntimeError("No connections available in the pool.")
 
-    def return_connection(self, connection: "SMTP") -> None:
-        with self.__lock:
-            self.__pool.put(connection)
+    def return_connection(self, connection: SMTP) -> None:
+        """Return an SMTP connection to the pool."""
+
+        with self._lock:
+            if self._pool.full():
+                connection.quit()  # Close connection if pool is full
+            else:
+                self._pool.put(connection)
 
     def close_connections(self) -> None:
-        while not self.__pool.empty():
-            connection = self.__pool.get()
-            connection.quit()
-            self.__current_pool_size -= 1
+        """Close all SMTP connections in the pool."""
+
+        with self._lock:
+            while not self._pool.empty():
+                connection = self._pool.get()
+                connection.quit()
 
 
-def send_mail(mail: dict):
+def send_mail(mail: dict) -> None:
+    """Send an email message using the SMTP connection pool."""
+
+    global host, port
     outgoing_mail = mail["outgoing_mail"]
     recipients = mail.get("recipients", [])
     parsed_message = Parser(policy=policy.default).parsestr(mail["message"])
@@ -74,9 +104,11 @@ def send_mail(mail: dict):
 
     sender = parsed_message["From"]
     message = parsed_message.as_string()
-    host = os.getenv("HARAKA_HOST")
-    port = os.getenv("HARAKA_PORT")
     smtp_pool = SMTPConnectionPool(host, port)
     connection = smtp_pool.get_connection()
-    connection.sendmail(sender, recipients, message)
-    print(f"Message {outgoing_mail} From `{sender}` To `{recipients}`.")
+
+    try:
+        connection.sendmail(sender, recipients, message)
+        print(f"Message {outgoing_mail} From `{sender}` To `{recipients}`.")
+    finally:
+        smtp_pool.return_connection(connection)
