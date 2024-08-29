@@ -70,6 +70,10 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
         env_vars["FRAPPE_BLACKLIST_HOST"] = ask_for_input(
             "Frappe Blacklist Host", "https://frappemail.com"
         )
+    else:
+        env_vars["MAX_EMAILS_PER_SECOND_PER_WORKER"] = ask_for_input(
+            "Max Emails Per Second Per Worker", 0.5
+        )
 
     test_rabbitmq_connection(env_vars)
     generate_env_file(env_vars)

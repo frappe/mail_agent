@@ -1,4 +1,5 @@
 import os
+import time
 from email import policy
 from smtplib import SMTP
 from threading import Lock
@@ -8,6 +9,7 @@ from email.parser import Parser
 
 host = os.getenv("HARAKA_HOST", "localhost")
 port = int(os.getenv("HARAKA_PORT", 25))
+max_emails_per_second = float(os.getenv("MAX_EMAILS_PER_SECOND_PER_WORKER", 0.5))
 
 
 class SMTPConnectionPool:
@@ -86,8 +88,55 @@ class SMTPConnectionPool:
                 connection.quit()
 
 
+class EmailRateLimiter:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs) -> "EmailRateLimiter":
+        """Singleton pattern to ensure only one instance of the rate limiter is created."""
+
+        if not cls._instance:
+            cls._instance = super(EmailRateLimiter, cls).__new__(cls)
+
+        return cls._instance
+
+    def __init__(self, max_emails_per_second: float = 0) -> None:
+        """Initialize the rate limiter with the desired email sending rate."""
+
+        if not hasattr(self, "_initialized"):  # Ensure __init__ is run only once
+            self.max_emails_per_second = max_emails_per_second
+            self.emails_sent = 0
+            self.start_time = time.time()
+            self._initialized = True
+
+    def throttle(self) -> None:
+        """Throttle email sending to maintain the desired rate."""
+
+        if self.max_emails_per_second <= 0:
+            return
+
+        self.emails_sent += 1
+        elapsed_time = time.time() - self.start_time
+        expected_emails = elapsed_time * self.max_emails_per_second
+
+        if self.emails_sent > expected_emails:
+            sleep_time = (self.emails_sent / self.max_emails_per_second) - elapsed_time
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+            self.start_time = time.time()
+            self.emails_sent = 0
+        else:
+            self.start_time = time.time()
+            self.emails_sent = 0
+
+
+def get_rate_limiter() -> EmailRateLimiter:
+    """Returns the singleton instance of the rate limiter."""
+
+    return EmailRateLimiter(max_emails_per_second=max_emails_per_second)
+
+
 def send_mail(mail: dict) -> None:
-    """Send an email message using the SMTP connection pool."""
+    """Send an email message using the SMTP connection pool, with rate limiting."""
 
     global host, port
     outgoing_mail = mail["outgoing_mail"]
@@ -108,7 +157,9 @@ def send_mail(mail: dict) -> None:
     connection = smtp_pool.get_connection()
 
     try:
+        rate_limiter = get_rate_limiter()
         connection.sendmail(sender, recipients, message)
         print(f"Message {outgoing_mail} From `{sender}` To `{recipients}`.")
+        rate_limiter.throttle()
     finally:
         smtp_pool.return_connection(connection)
