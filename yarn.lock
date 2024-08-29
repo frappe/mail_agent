@@ -932,7 +932,7 @@ haraka-constants@*, haraka-constants@^1.0.2, haraka-constants@^1.0.6, haraka-con
   resolved "https://registry.yarnpkg.com/haraka-constants/-/haraka-constants-1.0.7.tgz#337f61ec839860f5728cf283e72e95ae85b24459"
   integrity sha512-r53mUbj/lBPmtpR1o7ZmoYVGDuDxrr65gE1rSKjzPcpx/5WQN+keqi1FtyZ23mir121WOG3Y/pX0Wmmmmgw+6A==
 
-haraka-dsn@*, haraka-dsn@^1.0.4:
+haraka-dsn@*, haraka-dsn@^1.0.4, haraka-dsn@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/haraka-dsn/-/haraka-dsn-1.1.0.tgz#d015932f06ddee9035686fb1a8e4b4e32f0c5972"
   integrity sha512-lo8qG+7gjcsfDgpd6/2VVfzAQbkbYlz1ApZCOTrPKygd8qxYxelWT/ZBVjddXwVeNNm0yzyua+vi5S5IiyEFFw==

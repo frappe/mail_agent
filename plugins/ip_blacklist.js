@@ -1,4 +1,5 @@
 const axios = require("axios");
+const dsn = require("haraka-dsn");
 require("dotenv").config({ path: __dirname.replace("plugins", ".env") });
 
 const FRAPPE_BLACKLIST_HOST = process.env.FRAPPE_BLACKLIST_HOST;
@@ -22,10 +23,10 @@ exports.hook_connect = async function (next, connection) {
             const result = data.message;
             if (result && result.is_blacklisted) {
                 this.logwarn(`IP address ${remote_ip} is blacklisted.`);
-                return next(
-                    DENY,
-                    `Connection denied. Your IP address (${remote_ip}) is listed on our blacklist. This could be due to suspected malicious activity or a history of spam. If you believe this is an error, please contact our support team for further assistance.`
-                );
+                
+                const message = `Connection denied. Your IP address (${remote_ip}) is listed on our blacklist. This could be due to suspected malicious activity or a history of spam. If you believe this is an error, please contact our support team for further assistance.`;
+                
+                return next(DENY, dsn.sec_unauthorized(message));
             } else {
                 this.loginfo(`IP address ${remote_ip} is not blacklisted.`);
             }

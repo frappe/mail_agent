@@ -4,6 +4,7 @@ const path = require("path");
 const util = require("util");
 const amqp = require("amqplib");
 const crypto = require("crypto");
+const dsn = require("haraka-dsn");
 const unlink = util.promisify(fs.unlink);
 const readFile = util.promisify(fs.readFile);
 require("dotenv").config({ path: __dirname.replace("plugins", ".env") });
@@ -71,7 +72,7 @@ exports.hook_queue = function (next, connection, params) {
 
 function handle_error(error, context, next) {
     context.logerror(`Error occurred: ${error.toString()}`);
-    return next(DENY, "Message rejected due to an internal error.");
+    return next(DENY, dsn.sys_unspecified("Internal Server Error"));
 }
 
 async function process_recipients(transaction, content, context) {
