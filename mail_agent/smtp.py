@@ -1,9 +1,9 @@
 import os
 import time
+import threading
+from queue import Queue
 from email import policy
 from smtplib import SMTP
-from threading import Lock
-from queue import Queue, Empty
 from email.parser import Parser
 
 
@@ -39,13 +39,14 @@ class SMTPConnectionPool:
             self.__username = username
             self.__password = password
 
-            self._lock = Lock()
+            self._lock = threading.Lock()
+            self._condition = threading.Condition(self._lock)
             self._pool_size = pool_size
             self._pool = Queue(maxsize=pool_size)
             self._initialized = True
 
-    def __create_new_connection(self) -> None:
-        """Create a new SMTP connection and add it to the pool."""
+    def __create_new_connection(self) -> SMTP:
+        """Create a new SMTP connection."""
 
         connection = SMTP(self.__host, self.__port)
         connection.connect(self.__host, self.__port)
@@ -56,36 +57,39 @@ class SMTPConnectionPool:
         if self.__username and self.__password:
             connection.login(self.__username, self.__password)
 
-        self._pool.put(connection)
+        return connection
 
     def get_connection(self) -> SMTP:
-        """Get an SMTP connection from the pool."""
+        """Returns a SMTP connection from the pool."""
 
-        with self._lock:
-            if self._pool.empty() and self._pool.qsize() < self._pool_size:
-                self.__create_new_connection()
+        with self._condition:
+            while self._pool.empty():
+                if self._pool.qsize() < self._pool_size:
+                    return self.__create_new_connection()
+                if not self._condition.wait(timeout=5):
+                    raise RuntimeError("No connections available in the pool.")
 
-            try:
-                return self._pool.get(timeout=5)
-            except Empty:
-                raise RuntimeError("No connections available in the pool.")
+            return self._pool.get()
 
     def return_connection(self, connection: SMTP) -> None:
         """Return an SMTP connection to the pool."""
 
-        with self._lock:
+        with self._condition:
             if self._pool.full():
-                connection.quit()  # Close connection if pool is full
+                connection.quit()
             else:
                 self._pool.put(connection)
+                self._condition.notify()
 
     def close_connections(self) -> None:
         """Close all SMTP connections in the pool."""
 
-        with self._lock:
+        with self._condition:
             while not self._pool.empty():
-                connection = self._pool.get()
+                connection: SMTP = self._pool.get()
                 connection.quit()
+
+            self._condition.notify_all()
 
 
 class EmailRateLimiter:
@@ -154,12 +158,13 @@ def send_mail(mail: dict) -> None:
     sender = parsed_message["From"]
     message = parsed_message.as_string()
     smtp_pool = SMTPConnectionPool(host, port)
-    connection = smtp_pool.get_connection()
 
     try:
+        connection = smtp_pool.get_connection()
         rate_limiter = get_rate_limiter()
         connection.sendmail(sender, recipients, message)
         print(f"Message {outgoing_mail} From `{sender}` To `{recipients}`.")
         rate_limiter.throttle()
     finally:
-        smtp_pool.return_connection(connection)
+        if connection:
+            smtp_pool.return_connection(connection)
