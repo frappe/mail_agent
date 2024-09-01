@@ -5,6 +5,8 @@ from utils import get_attr, replace_env_vars
 
 
 def run(config: dict, queue: str, worker_id: str) -> None:
+    """Runs the Mail Agent worker."""
+
     replace_env_vars(config)
 
     queues_config = config["queues"]
@@ -22,6 +24,8 @@ def run(config: dict, queue: str, worker_id: str) -> None:
 
 
 def get_rabbitmq_connection(rabbitmq_config: dict) -> RabbitMQ:
+    """Returns a RabbitMQ connection."""
+
     return RabbitMQ(
         host=rabbitmq_config["host"],
         port=rabbitmq_config["port"],
@@ -32,6 +36,8 @@ def get_rabbitmq_connection(rabbitmq_config: dict) -> RabbitMQ:
 
 
 def declare_queues(rabbitmq: RabbitMQ, queues_config: dict[str, dict]) -> None:
+    """Declares the queues in RabbitMQ."""
+
     for queue, queue_config in queues_config.items():
         rabbitmq.declare_queue(
             queue=queue,

@@ -11,6 +11,8 @@ from mail_agent.utils import (
 
 class Haraka:
     def __init__(self) -> None:
+        """Initializes the Haraka class."""
+
         self.haraka_local = os.getcwd()
         self.config_files = {
             "me": "config/me",
@@ -25,26 +27,25 @@ class Haraka:
 
     @staticmethod
     def get_status() -> str:
+        """Returns the status of the Haraka service."""
+
         error, output = execute_command("sudo systemctl status haraka")
         return error or output
 
     @staticmethod
     def restart() -> None:
+        """Restarts the Haraka service."""
+
         execute_command("sudo systemctl restart haraka")
 
     def get_file_path(self, file_key: str) -> str:
+        """Returns the file path for the given file key."""
+
         return os.path.join(self.haraka_local, self.config_files[file_key])
 
-    def update_mail_domains(self, content: str = "") -> None:
-        write_file(self.get_file_path("mail_domains.json"), content)
-
-    def update_mailboxes(self, content: str = "") -> None:
-        write_file(self.get_file_path("mailboxes.json"), content)
-
-    def update_aliases(self, content: str = "") -> None:
-        write_file(self.get_file_path("aliases"), content)
-
     def setup(self, config: dict) -> None:
+        """Sets up the Haraka configuration."""
+
         for file_key, file_path in self.config_files.items():
             create_file(self.get_file_path(file_key))
 
@@ -108,6 +109,8 @@ def generate_self_signed_tls_certificate(
     common_name: str = "frappe.io",
     key_size: int = 2048,
 ) -> None:
+    """Generates a self-signed TLS certificate."""
+
     import datetime
     from cryptography import x509
     from cryptography.x509.oid import NameOID

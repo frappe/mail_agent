@@ -2,6 +2,8 @@ from setuptools import setup, find_packages
 
 
 def get_requirements() -> list[str]:
+    """Returns the requirements from the requirements.txt"""
+
     with open("requirements.txt") as f:
         return f.read().strip().split("\n")
 
