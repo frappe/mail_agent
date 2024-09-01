@@ -24,3 +24,4 @@ config/tls_cert.pem
 config/dhparams.pem
 config/relay_acl_allow
 config/spamassassin.ini
+config/auth_enc_file.ini

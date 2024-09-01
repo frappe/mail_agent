@@ -9,6 +9,8 @@ from email.parser import Parser
 
 host = os.getenv("HARAKA_HOST", "localhost")
 port = int(os.getenv("HARAKA_PORT", 25))
+username = os.getenv("HARAKA_USERNAME", None)
+password = os.getenv("HARAKA_PASSWORD", None)
 max_emails_per_second = float(os.getenv("MAX_EMAILS_PER_SECOND_PER_WORKER", 0.5))
 
 
@@ -142,7 +144,7 @@ def get_rate_limiter() -> EmailRateLimiter:
 def send_mail(mail: dict) -> None:
     """Send an email message using the SMTP connection pool, with rate limiting."""
 
-    global host, port
+    global host, port, username, password
     outgoing_mail = mail["outgoing_mail"]
     recipients = mail.get("recipients", [])
     parsed_message = Parser(policy=policy.default).parsestr(mail["message"])
@@ -157,7 +159,7 @@ def send_mail(mail: dict) -> None:
 
     sender = parsed_message["From"]
     message = parsed_message.as_string()
-    smtp_pool = SMTPConnectionPool(host, port)
+    smtp_pool = SMTPConnectionPool(host, port, username, password)
 
     try:
         connection = smtp_pool.get_connection()

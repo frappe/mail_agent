@@ -16,6 +16,7 @@
     "axios": "^1.7.4",
     "dotenv": "^16.4.5",
     "haraka-dsn": "^1.1.0",
+    "haraka-plugin-auth-enc-file": "^1.0.3",
     "haraka-plugin-mailauth": "^1.1.0",
     "haraka-plugin-spamassassin": "^1.0.0"
   }

@@ -5,6 +5,7 @@ from mail_agent.utils import (
     execute_command,
     update_ini_config,
     remove_ini_config,
+    get_encrypted_password,
 )
 
 
@@ -19,6 +20,7 @@ class Haraka:
             "outbound.ini": "config/outbound.ini",
             "relay_acl_allow": "config/relay_acl_allow",
             "spamassassin.ini": "config/spamassassin.ini",
+            "auth_enc_file.ini": "config/auth_enc_file.ini",
         }
 
     @staticmethod
@@ -54,6 +56,12 @@ class Haraka:
                 config["received_header"],
             )
             write_file(self.get_file_path("relay_acl_allow"), config["relay_acl_allow"])
+            update_ini_config(
+                self.get_file_path("auth_enc_file.ini"),
+                "users",
+                config["username"],
+                get_encrypted_password(config["password"]),
+            )
         else:
             spamassassin_config = {
                 "host": config["spamassassin_host"],
@@ -61,7 +69,7 @@ class Haraka:
             }
             for key, value in spamassassin_config.items():
                 update_ini_config(
-                    self.get_file_path("spamassassin.ini"), "main", key, value
+                    self.get_file_path("spamassassin.ini"), "main", key, str(value)
                 )
 
         smtp_config = {

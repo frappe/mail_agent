@@ -9,8 +9,9 @@ from mail_agent.haraka import Haraka
 from mail_agent.rabbitmq import RabbitMQ
 from mail_agent.utils import (
     write_file,
-    replace_env_vars,
     execute_command,
+    replace_env_vars,
+    generate_password,
     create_systemd_service,
 )
 
@@ -53,6 +54,8 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
         "AGENT_TYPE": agent_type,
         "HARAKA_HOST": ask_for_input("Haraka Host", "localhost"),
         "HARAKA_PORT": ask_for_input("Haraka Port", 25),
+        "HARAKA_USERNAME": "frappe",
+        "HARAKA_PASSWORD": generate_password(),
         "RABBITMQ_HOST": ask_for_input(
             "RabbitMQ Host", "localhost" if not prod else None, required=True
         ),

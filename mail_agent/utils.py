@@ -74,6 +74,36 @@ def remove_ini_config(file_path: str, section: str, key: str) -> None:
         config.write(f)
 
 
+def generate_password(length: int = 12, use_special_chars: bool = True) -> str:
+    if length < 4:
+        raise ValueError(
+            "Password length should be at least 4 to include all character types."
+        )
+
+    import string
+    import random
+
+    lowercase = string.ascii_lowercase
+    uppercase = string.ascii_uppercase
+    digits = string.digits
+    special_chars = string.punctuation if use_special_chars else ""
+
+    all_chars = lowercase + uppercase + digits + special_chars
+    password = [
+        random.choice(lowercase),
+        random.choice(uppercase),
+        random.choice(digits),
+    ]
+
+    if use_special_chars:
+        password.append(random.choice(special_chars))
+
+    password += random.choices(all_chars, k=length - len(password))
+    random.shuffle(password)
+
+    return "".join(password)
+
+
 def get_encrypted_password(password: str, salt: str | None = None) -> str:
     if not salt:
         salt = crypt.mksalt(crypt.METHOD_SHA512)

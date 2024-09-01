@@ -1005,6 +1005,13 @@ haraka-plugin-attachment@^1.0.7:
     haraka-utils "^1.1.2"
     tmp "^0.2.3"
 
+haraka-plugin-auth-enc-file@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/haraka-plugin-auth-enc-file/-/haraka-plugin-auth-enc-file-1.0.3.tgz#a22355ffeb87a8610056fc47417633e726dd73e4"
+  integrity sha512-mnL6fuWk32Z9D8kPEbBGMgiT32AHI7RJ2jIdiihnfSpB/+9gDnUwgE0ugJuWNTIsBqPHcKks82nM+Me/iUlhPw==
+  dependencies:
+    sha512crypt-node "^0.1.0"
+
 haraka-plugin-auth-ldap@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/haraka-plugin-auth-ldap/-/haraka-plugin-auth-ldap-1.1.0.tgz#a5c636cbe17b9f9f49030c3b65a08d9af8b55fc4"
@@ -2093,6 +2100,11 @@ set-blocking@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
   integrity sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==
+
+sha512crypt-node@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/sha512crypt-node/-/sha512crypt-node-0.1.0.tgz#6a8e4694aff06367654cd20a790898cc855b4ac4"
+  integrity sha512-K15WswslbM0MtbL/9KORGbZqBGjr0hD0dX5bfFMgXKt7H0oEDSMIAN0sCCTurZ5PEHuVifK+1RkpZ6eh73bdKA==
 
 shebang-command@^2.0.0:
   version "2.0.0"
