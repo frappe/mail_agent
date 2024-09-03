@@ -213,11 +213,11 @@ def install_node_packages(for_production: bool = False) -> None:
 
 
 def install_haraka_globally() -> None:
-    """Install Haraka globally using Yarn."""
+    """Install Haraka globally."""
 
     click.echo("🌍 [INFO] Installing Haraka globally...")
     subprocess.run(
-        ["npm", "install", "-g", "Haraka", "--silent"],
+        ["npm", "install", "-g", "Haraka@3.0.3", "--silent"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
