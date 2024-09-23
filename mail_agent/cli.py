@@ -142,17 +142,18 @@ def setup_for_development(config: dict) -> None:
 
 
 def ask_for_input(
-    prompt: str, default: str | int | None = None, required: bool = False
+    prompt: str,
+    default: str | int | None = None,
+    required: bool = False,
 ) -> str:
     """Ask for user input with an optional default value."""
 
-    if default:
-        return input(f"🔹 {prompt} [{default}]: ") or default
-
     if required:
-        return input(f"🔹 {prompt}: ") or ask_for_input(prompt, required=True)
+        return click.prompt(f"🔹 {prompt}", default=default) or ask_for_input(
+            prompt, default=default, required=True
+        )
 
-    return input(f"🔹 {prompt}: ")
+    return click.prompt(f"🔹 {prompt}", default=default)
 
 
 def test_rabbitmq_connection(env_vars: dict) -> None:
