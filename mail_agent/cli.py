@@ -65,7 +65,10 @@ def setup(prod: bool = False, inbound: bool = False) -> None:
             "RabbitMQ Username", "guest" if not prod else me
         ),
         "RABBITMQ_PASSWORD": ask_for_input(
-            "RabbitMQ Password", "guest" if not prod else None, required=True
+            "RabbitMQ Password",
+            "guest" if not prod else None,
+            required=True,
+            hide_input=True,
         ),
     }
 
@@ -145,15 +148,18 @@ def ask_for_input(
     prompt: str,
     default: str | int | None = None,
     required: bool = False,
+    hide_input: bool = False,
 ) -> str:
     """Ask for user input with an optional default value."""
 
     if required:
-        return click.prompt(f"🔹 {prompt}", default=default) or ask_for_input(
-            prompt, default=default, required=True
+        return click.prompt(
+            f"🔹 {prompt}", default=default, hide_input=hide_input
+        ) or ask_for_input(
+            prompt, default=default, required=True, hide_input=hide_input
         )
 
-    return click.prompt(f"🔹 {prompt}", default=default)
+    return click.prompt(f"🔹 {prompt}", default=default, hide_input=hide_input)
 
 
 def test_rabbitmq_connection(env_vars: dict) -> None:
