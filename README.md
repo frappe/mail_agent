@@ -14,7 +14,7 @@ pip install --editable .
 
 ## Setup
 
-### Development Setup
+### Development
 
 Follow these steps to set up Mail Agent for development:
 
@@ -40,7 +40,7 @@ Follow these steps to set up Mail Agent for development:
   mail-agent start
   ```
 
-### Production Setup (Ubuntu)
+### Production (Ubuntu)
 
 For production deployment on Ubuntu, follow these steps:
 
@@ -96,3 +96,7 @@ For production deployment on Ubuntu, follow these steps:
   # Outbound
   sudo systemctl status mail-agent
   ```
+
+## License
+
+[GNU Affero General Public License v3.0](https://github.com/frappe/mail_agent/blob/develop/license.txt)
