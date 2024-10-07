@@ -9,7 +9,7 @@ git clone https://github.com/frappe/mail_agent
 cd mail_agent
 virtualenv venv
 source venv/bin/activate
-pip install --editable .
+pip install .
 ```
 
 ## Setup

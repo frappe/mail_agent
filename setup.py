@@ -11,12 +11,16 @@ def get_requirements() -> list[str]:
 setup(
     name="mail-agent",
     version="0.0.1",
-    description="Frappe Mail Agent",
+    packages=find_packages(),
+    include_package_data=True,
     author="Frappe Technologies Pvt. Ltd.",
     author_email="developers@frappe.io",
+    description="Frappe Mail Agent",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     url="https://github.com/frappe/mail_agent",
-    packages=find_packages(),
     zip_safe=False,
+    python_requires=">=3.10",
     install_requires=get_requirements(),
     entry_points={
         "console_scripts": [
