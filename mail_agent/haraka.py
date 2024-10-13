@@ -21,7 +21,6 @@ class Haraka:
             "smtp.ini": "config/smtp.ini",
             "outbound.ini": "config/outbound.ini",
             "relay_acl_allow": "config/relay_acl_allow",
-            "spamassassin.ini": "config/spamassassin.ini",
             "auth_enc_file.ini": "config/auth_enc_file.ini",
         }
 
@@ -63,15 +62,6 @@ class Haraka:
                 config["username"],
                 get_encrypted_password(config["password"]),
             )
-        else:
-            spamassassin_config = {
-                "host": config["spamassassin_host"],
-                "port": config["spamassassin_port"],
-            }
-            for key, value in spamassassin_config.items():
-                update_ini_config(
-                    self.get_file_path("spamassassin.ini"), "main", key, str(value)
-                )
 
         smtp_config = {
             "listen": f"[::0]:{config['port']}",

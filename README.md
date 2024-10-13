@@ -90,9 +90,6 @@ For production deployment on Ubuntu, follow these steps:
   ```bash
   sudo systemctl status haraka
 
-  # Inbound
-  sudo systemctl status spamassassin
-
   # Outbound
   sudo systemctl status mail-agent
   ```
