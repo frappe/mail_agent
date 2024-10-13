@@ -122,10 +122,6 @@ def setup_for_production(config: dict) -> None:
     install_haraka_globally()
     setup_haraka(config["haraka"], for_production=True)
     generate_procfile(config, for_production=True)
-
-    if config["haraka"]["agent_type"] == "inbound":
-        install_and_setup_spamassassin()
-
     create_haraka_service()
 
     if config["haraka"]["agent_type"] == "outbound":
@@ -237,7 +233,7 @@ def setup_haraka(haraka_config: dict, for_production: bool = False) -> None:
 
     if for_production:
         additional_plugins = {
-            "inbound": ["ip_blacklist", "enforce_rdns", "spamassassin"],
+            "inbound": ["ip_blacklist", "enforce_rdns"],
             "outbound": [],
         }
 
@@ -280,16 +276,6 @@ def generate_procfile(config: dict, for_production: bool = False) -> None:
 
     with open("Procfile", "w") as f:
         f.write("\n".join(lines))
-
-
-def install_and_setup_spamassassin() -> None:
-    """Install and setup SpamAssassin."""
-
-    click.echo("🔍 [INFO] Installing and configuring SpamAssassin...")
-    execute_in_shell("sudo apt update")
-    execute_in_shell("sudo apt install spamassassin -y")
-    execute_in_shell("sudo systemctl restart spamassassin")
-    execute_in_shell("sudo systemctl enable spamassassin")
 
 
 def create_haraka_service() -> None:
